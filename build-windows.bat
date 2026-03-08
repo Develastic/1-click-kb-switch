@@ -1,8 +1,4 @@
 @echo off
 setlocal
-
-set SCRIPT_DIR=%~dp0
-powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_DIR%build-windows.ps1" %*
-if errorlevel 1 exit /b %errorlevel%
-
-endlocal
+cd /d %~dp0
+powershell -ExecutionPolicy Bypass -File .\build-windows.ps1 %*

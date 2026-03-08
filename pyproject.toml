@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "one-click-kb-switch"
+version = "0.1.0"
+description = "Directed keyboard layout switcher with single-click modifier hotkeys"
+readme = "README.md"
+authors = [{ name = "Mykola Rudenko" }]
+license = { text = "MIT" }
+requires-python = ">=3.12"
+dependencies = [
+  "customtkinter",
+  "pillow",
+  "platformdirs",
+  "pystray",
+  "python-xlib; sys_platform == 'linux'",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pyinstaller",
+  "pytest",
+]
+
+[project.scripts]
+one-click-kb-switch = "one_click_kb_switch.app:main"
+
+[tool.setuptools]
+package-dir = {"" = "app"}
+
+[tool.setuptools.packages.find]
+where = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["app"]

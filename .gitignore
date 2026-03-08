@@ -1,10 +1,21 @@
-# Rust
-target/
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+.pytest_cache/
 
-# Build and runtime
-bin/
+# Build outputs
+build/
 dist/
 out/
+*.wixobj
+*.wixpdb
+*.msi
+*.AppImage
+
+# Runtime
 *.log
 *.pid
 *.sock

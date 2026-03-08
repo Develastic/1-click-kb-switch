@@ -1,0 +1,92 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from one_click_kb_switch.core.models import HotkeyBinding
+
+
+class HotkeyConflictError(ValueError):
+    pass
+
+
+def normalize_modifier_names(modifiers: list[str]) -> list[str]:
+    return sorted({item.strip().title() for item in modifiers if item.strip()})
+
+
+def canonical_binding(binding: HotkeyBinding) -> str:
+    if binding.binding_type == "single_click":
+        return f"single:{binding.trigger_key.title()}"
+    modifier_text = "+".join(normalize_modifier_names(binding.modifiers))
+    return f"combo:{modifier_text}+{binding.trigger_key.title()}"
+
+
+def validate_binding(binding: HotkeyBinding) -> None:
+    if not binding.layout_id:
+        raise ValueError("layout_id is required")
+    if not binding.trigger_key:
+        raise ValueError("trigger_key is required")
+    if binding.binding_type not in {"single_click", "combo"}:
+        raise ValueError("Unsupported binding type")
+    if binding.binding_type == "single_click" and binding.modifiers:
+        raise ValueError("Single-click binding must not contain modifiers")
+
+
+def validate_unique(bindings: list[HotkeyBinding]) -> None:
+    seen: dict[str, HotkeyBinding] = {}
+    for binding in bindings:
+        validate_binding(binding)
+        key = canonical_binding(binding)
+        if key in seen:
+            raise HotkeyConflictError(f"Conflicting binding: {key}")
+        seen[key] = binding
+
+
+def default_bindings(english_layout_id: str | None, non_english_layout_id: str | None) -> list[HotkeyBinding]:
+    bindings: list[HotkeyBinding] = []
+    if english_layout_id:
+        bindings.append(HotkeyBinding(layout_id=english_layout_id, binding_type="single_click", trigger_key="RightCtrl"))
+    if non_english_layout_id:
+        bindings.append(HotkeyBinding(layout_id=non_english_layout_id, binding_type="single_click", trigger_key="RightShift"))
+    return bindings
+
+
+def upsert_custom_binding(bindings: list[HotkeyBinding], new_binding: HotkeyBinding) -> list[HotkeyBinding]:
+    filtered = [item for item in bindings if not (item.layout_id == new_binding.layout_id and item.binding_type == "combo")]
+    filtered.append(new_binding)
+    validate_unique(filtered)
+    return filtered
+
+
+def clear_custom_binding(bindings: list[HotkeyBinding], layout_id: str) -> list[HotkeyBinding]:
+    return [item for item in bindings if not (item.layout_id == layout_id and item.binding_type == "combo")]
+
+
+@dataclass(slots=True)
+class InputEvent:
+    key: str
+    kind: str
+
+
+class SingleClickDetector:
+    def __init__(self, target_key: str) -> None:
+        self.target_key = target_key
+        self._pressed = False
+        self._blocked = False
+
+    def feed(self, event: InputEvent) -> bool:
+        if event.kind == "mouse":
+            if self._pressed:
+                self._blocked = True
+            return False
+        if event.key == self.target_key and event.kind == "down":
+            self._pressed = True
+            self._blocked = False
+            return False
+        if event.key == self.target_key and event.kind == "up":
+            should_trigger = self._pressed and not self._blocked
+            self._pressed = False
+            self._blocked = False
+            return should_trigger
+        if self._pressed and event.kind in {"down", "up"}:
+            self._blocked = True
+        return False

@@ -5,96 +5,96 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - "v*"
+      - 'v*'
 
 permissions:
   contents: write
 
 jobs:
-  build-and-test:
+  test:
     strategy:
       matrix:
-        include:
-          - os: ubuntu-latest
-          - os: windows-latest
+        os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Install Windows compile target on Linux CI
-        if: matrix.os == 'ubuntu-latest'
-        run: rustup target add x86_64-pc-windows-msvc
-      - name: Install Linux native dependencies
-        if: matrix.os == 'ubuntu-latest'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Sync dependencies
+        run: uv sync --extra dev
+      - name: Validate tag version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libxdo-dev libayatana-appindicator3-dev
-      - name: Test
-        run: cargo test --workspace
-      - name: Windows target compile check
-        if: matrix.os == 'ubuntu-latest'
-        run: cargo check --workspace --tests --target x86_64-pc-windows-msvc
-      - name: Build
-        run: cargo build --workspace --release
+          VERSION=$(python - <<'PYV'
+import tomllib
+from pathlib import Path
+print(tomllib.loads(Path('pyproject.toml').read_text(encoding='utf-8'))['project']['version'])
+PYV
+)
+          TAG=${GITHUB_REF_NAME#v}
+          test "$VERSION" = "$TAG"
+      - name: Validate Tk
+        run: uv run python -c "import tkinter; print(tkinter.TkVersion)"
+      - name: Run tests
+        run: uv run pytest
 
-  windows-release:
+  package-windows:
     if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: astral-sh/setup-uv@v6
         with:
-          targets: x86_64-pc-windows-msvc
-      - name: Resolve release version
-        shell: pwsh
-        run: |
-          $cargoVersion = (Get-Content app/Cargo.toml | Select-String '^version = "').ToString().Split('"')[1]
-          if ("${{ github.ref_type }}" -eq "tag") {
-            $tagVersion = "${{ github.ref_name }}".Substring(1)
-            if ($tagVersion -ne $cargoVersion) {
-              throw "Tag version $tagVersion does not match app/Cargo.toml version $cargoVersion"
-            }
-            $version = $tagVersion
-          } else {
-            $version = $cargoVersion
-          }
-          "APP_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-      - name: Install cargo-wix
-        run: cargo install cargo-wix --version 0.3.9 --locked
+          python-version: '3.12'
+      - name: Sync dependencies
+        run: uv sync --extra dev
       - name: Install WiX Toolset
         run: choco install wixtoolset --no-progress -y
-      - name: Test
-        run: cargo test --workspace
-      - name: Build release binary
-        run: cargo build --workspace --release --target x86_64-pc-windows-msvc
-      - name: Build MSI installer
-        working-directory: app
-        run: cargo wix --package one-click-kb-switch --target x86_64-pc-windows-msvc --output ../target/wix/
-      - name: Prepare release bundle
+      - name: Build Windows package
         shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force target/release-assets | Out-Null
-          Copy-Item target/x86_64-pc-windows-msvc/release/one-click-kb-switch.exe target/release-assets/
-          Copy-Item target/wix/*.msi target/release-assets/
-          Copy-Item README.md target/release-assets/
-          Copy-Item LICENSE target/release-assets/
-          $notes = Get-Content .github/release/windows-release-notes-template.md -Raw
-          $notes = $notes.Replace('{{version}}', $env:APP_VERSION)
-          Set-Content target/release-assets/RELEASE_NOTES.md $notes
-          Get-ChildItem target/release-assets | ForEach-Object {
-            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash
-            "$hash  $($_.Name)" | Add-Content target/release-assets/SHA256SUMS.txt
-          }
-      - name: Upload Windows release bundle
+        run: ./build-windows.ps1
+      - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-release-bundle
-          path: target/release-assets
-      - name: Publish GitHub release assets
+          path: dist/release-assets
+      - name: Publish release assets
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          files: |
-            target/release-assets/*
+          files: dist/release-assets/*
+
+  package-linux:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Install Linux native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk libx11-dev libxtst-dev libxkbfile-dev libappindicator3-dev
+      - name: Sync dependencies
+        run: uv sync --extra dev
+      - name: Download appimagetool
+        run: |
+          curl -L -o appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool
+      - name: Build AppImage
+        env:
+          APPIMAGETOOL: ${{ github.workspace }}/appimagetool
+        run: ./build-linux.sh
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-release-bundle
+          path: dist/*.AppImage
+      - name: Publish release assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.AppImage

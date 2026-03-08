@@ -1,53 +1,44 @@
 # Project Description
-One Click KB Switch is a native-first cross-platform desktop keyboard layout switcher. The project now targets Rust instead of Go, focuses on Windows amd64 and Linux amd64, uses tao for the native event loop/window shell, tray-icon for tray integration, and keeps user configuration in OS-specific config directories.
+1-Click-KB-Switch is a cross-platform desktop keyboard layout switcher for people who use multiple layouts and dislike cyclic switching. The application provides directed switching: one key always maps to one target layout, with single-click modifier bindings such as RightCtrl for English and RightShift for the first non-English layout.
 
 # Project Archirecture
-The application uses a Rust workspace with a native desktop app crate under app/. Typed serde models own config, layouts, and hotkeys. Platform-specific behavior is isolated behind a PlatformBackend trait with Linux X11 and Windows implementations. The app uses tao for the event loop and main window shell, tray-icon for tray menu/icon handling, a pure-Rust bitmap glyph generator for dynamic two-letter tray icons, and Windows low-level hooks for single-click detection. Linux v1 uses X11 tooling and does not support Wayland. Windows releases are packaged as MSI installers via WiX.
+The project uses Python 3.12 with CustomTkinter for the main window and pystray for the tray icon. Domain logic lives in typed dataclass-based core services for config, layouts, hotkeys, and runtime state. Platform-specific behavior is isolated behind a PlatformBackend contract with separate Windows, Linux X11, and experimental Linux Wayland implementations. Windows uses WinAPI integration through ctypes for layout switching and low-level hook processing. Linux X11 uses X11/XKB tooling and python-xlib for event listening. Packaging uses PyInstaller one-dir bundles, WiX-based MSI packaging for Windows, and AppImage packaging for Linux.
 
 # Project Units
-- Cargo.toml — workspace manifest.
+- pyproject.toml — project metadata, dependencies, pytest config, console entrypoint.
+- config.toml — canonical app metadata and build/runtime constants.
+- EULA.md — end-user agreement with no-warranty/no-liability terms.
 - app/
-  - Cargo.toml — application crate manifest and native dependencies.
-  - build.rs — Windows resource embedding.
-  - assets/config.json.defaults — embedded default user config template.
-  - assets/app.ico — Windows icon for executable and installer metadata.
-  - src/main.rs — bootstrap entry point.
-  - src/lib.rs — crate module exports.
-  - src/config.rs — typed config model, defaults embedding, OS path resolution, load/save/create methods.
-  - src/layouts.rs — layout normalization, english detection, tray-label generation.
-  - src/hotkeys.rs — hotkey model, default bindings, validation, combo conversion, single-click detector state machine.
-  - src/runtime.rs — typed runtime state for active layout, hooks, tray, and capture mode.
-  - src/sound.rs — runtime switch sound behavior.
-  - src/platform/mod.rs — backend trait and platform factory.
-  - src/platform/linux_x11.rs — Linux X11 layout discovery and switching via setxkbmap.
-  - src/platform/windows.rs — Windows layout enumeration, active-layout detection, and switching via Win32 APIs.
-  - src/platform/windows_hooks.rs — Windows low-level keyboard and mouse hook thread for single-click detection.
-  - src/state.rs — bootstrap orchestration, defaults selection, warnings, runtime state updates, custom binding persistence.
-  - src/tray.rs — tray menu, tray command mapping, two-letter icon generation.
-  - src/ui.rs — tao event loop, tray/window lifecycle, combo registration, capture flow, active-layout refresh loop.
-  - windows/app.manifest — Windows executable manifest.
-  - wix/main.wxs — WiX installer definition.
-- docs/
-  - windows-release.md — Windows release procedure.
-  - windows-manual-qa.md — Windows manual acceptance checklist.
-- .github/workflows/ci.yml — CI plus Windows release packaging job.
-- .github/release/windows-release-notes-template.md — release notes template.
-- setup.sh/setup.bat — Rust toolchain bootstrap helpers.
-- run-app.sh/run-app.bat — run helpers.
-- README.md — public project documentation and current limitations.
-- LICENSE — MIT license.
+  - main.py — thin executable entrypoint.
+  - assets/config.json.defaults — default user config template.
+  - assets/fonts/dejavusans.ttf — bundled real font for tray label rendering.
+  - one_click_kb_switch/
+    - app.py — bootstrap entry for RuntimeController and UI.
+    - config.py — reads config.toml metadata.
+    - paths.py — resolves repo/bundle asset paths.
+    - core/models.py — typed dataclasses.
+    - core/config.py — AppConfig load/save/defaults/validation.
+    - core/layouts.py — english detection, auto labels, default pair selection.
+    - core/hotkeys.py — bindings, conflict validation, single-click detector.
+    - core/controller.py — runtime orchestration between config, backend, hooks, and UI.
+    - platform/base.py — backend contract.
+    - platform/factory.py — backend selection by OS/session.
+    - platform/windows/backend.py — WinAPI layout switching and low-level hook loop.
+    - platform/linux_x11/backend.py — X11 layout handling and record-based event listening.
+    - platform/linux_wayland/backend.py — experimental backend with explicit warnings.
+    - ui/main_window.py — CustomTkinter main window and tray lifecycle.
+    - ui/tray.py — tray menu and font-based icon rendering.
+- packaging/windows/installer.wxs — MSI definition with launch-on-exit checkbox.
+- packaging/windows/one_click_kb_switch.spec — Windows PyInstaller spec.
+- packaging/linux/appimage/one_click_kb_switch.spec — Linux PyInstaller spec.
+- docs/windows-release.md — Windows release instructions.
+- docs/windows-manual-qa.md — Windows manual QA checklist.
+- tests/ — unit tests for config, layouts, and hotkeys.
+- .github/workflows/ci.yml — PR validation and manual/tag packaging workflows.
 
 # Notes
-- 2026-03-08: Removed the Go scaffold and replaced it with a Rust native-first workspace.
-- 2026-03-08: Chosen stack: tao + tray-icon + global-hotkey-oriented architecture.
-- 2026-03-08: Linux v1 remains X11-only; Wayland is explicitly unsupported.
-- 2026-03-08: Windows layout enumeration, active-layout detection, and foreground-window switching are wired through Win32 APIs.
-- 2026-03-08: Added Windows low-level keyboard/mouse hook runtime for single-click detection, tray-driven custom hotkey capture, MSI packaging template, icon, manifest, and Windows release documentation.
-- 2026-03-08: No silent fallbacks were introduced for unsupported platform capabilities.
-- 2026-03-08: Added local Windows build scripts for EXE/MSI generation, release-asset bundling, and checksum generation.
-Update 2026-03-08:
-- Created public GitHub repository: https://github.com/Develastic/1-click-kb-switch
-- Pushed current branch codex/initial-scaffold to origin.
-- Updated GitHub Actions policy so ordinary commits do not trigger builds; CI now runs on pull requests, manual dispatch, and releases.
-- Documented SemVer release policy in README. 
-- Switched release versioning policy to tag-based SemVer (`vX.Y.Z`) with workflow validation against `app/Cargo.toml`.
+- 2026-03-08: Archived the Rust implementation on branch `codex/archive-rust-native-first` before migrating `main` to Python.
+- 2026-03-08: Canonical public product name is `1-Click-KB-Switch`; filesystem names stay lowercase.
+- 2026-03-08: Tray icon rendering must use a real font to avoid mirrored glyph defects.
+- 2026-03-08: MSI installer must offer launching the app after install, opt-out by checkbox.
+- 2026-03-08: Wayland is experimental only and must show explicit warnings instead of pretending to support unsupported global hook behavior.
