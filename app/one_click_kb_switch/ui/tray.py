@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from threading import Thread
 from typing import Callable
 
 from PIL import Image, ImageDraw, ImageFont
@@ -40,6 +41,7 @@ def render_tray_icon(label: str) -> Image.Image:
 
 class TrayIcon:
     def __init__(self, label: str, on_show: Callable[[], None], on_exit: Callable[[], None]) -> None:
+        self._thread: Thread | None = None
         metadata = load_metadata()
         self._icon = pystray.Icon(
             metadata.canonical_name,
@@ -52,7 +54,10 @@ class TrayIcon:
         )
 
     def run(self) -> None:
-        self._icon.run_detached()
+        if self._thread and self._thread.is_alive():
+            return
+        self._thread = Thread(target=self._icon.run, daemon=True)
+        self._thread.start()
 
     def update_label(self, label: str) -> None:
         self._icon.icon = render_tray_icon(label)
