@@ -16,6 +16,7 @@ dependencies = [
   "platformdirs",
   "pystray",
   "python-xlib; sys_platform == 'linux'",
+  "PyGObject; sys_platform == 'linux'",
 ]
 
 [project.optional-dependencies]

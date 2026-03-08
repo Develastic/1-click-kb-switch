@@ -44,3 +44,4 @@ The project uses Python 3.12 with CustomTkinter for the main window and pystray 
 - 2026-03-08: Wayland is experimental only and must show explicit warnings instead of pretending to support unsupported global hook behavior.
 
 - 2026-03-08: Fixed Python startup on non-Windows hosts by making Windows backend import lazy in platform factory.
+- 2026-03-08: Linux tray menu requires AppIndicator-capable pystray backend; added PyGObject-based backend enablement to avoid menu-less XOrg fallback.

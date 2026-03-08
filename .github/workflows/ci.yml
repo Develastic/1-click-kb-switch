@@ -35,8 +35,8 @@ PYV
 )
           TAG=${GITHUB_REF_NAME#v}
           test "$VERSION" = "$TAG"
-      - name: Validate Tk
-        run: uv run python -c "import tkinter; print(tkinter.TkVersion)"
+      - name: Validate desktop runtime
+        run: uv run python -c "import tkinter, pystray; print(tkinter.TkVersion); print(pystray.Icon.__module__)"
       - name: Run tests
         run: uv run pytest
 
@@ -77,7 +77,7 @@ PYV
       - name: Install Linux native dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-tk libx11-dev libxtst-dev libxkbfile-dev libappindicator3-dev
+          sudo apt-get install -y python3-tk libx11-dev libxtst-dev libxkbfile-dev libappindicator3-dev libgirepository1.0-dev libcairo2-dev gir1.2-gtk-3.0 gir1.2-ayatanaappindicator3-0.1
       - name: Sync dependencies
         run: uv sync --extra dev
       - name: Download appimagetool

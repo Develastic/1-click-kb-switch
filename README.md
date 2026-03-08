@@ -28,6 +28,7 @@ With a cyclic switcher, a hotkey only means “go to the next layout”, so you 
   - `RightShift` → first detected non-English layout
 - Custom bindings can be assigned per layout
 - Tray labels are rendered with a real font to avoid mirrored glyph issues
+- Linux tray menu uses the AppIndicator backend, not the limited XOrg fallback
 - Windows MSI installer includes an optional “Launch 1-Click-KB-Switch” checkbox
 
 ## Install and run for development
