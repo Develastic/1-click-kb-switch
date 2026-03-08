@@ -45,3 +45,8 @@ The application uses a Rust workspace with a native desktop app crate under app/
 - 2026-03-08: Added Windows low-level keyboard/mouse hook runtime for single-click detection, tray-driven custom hotkey capture, MSI packaging template, icon, manifest, and Windows release documentation.
 - 2026-03-08: No silent fallbacks were introduced for unsupported platform capabilities.
 - 2026-03-08: Added local Windows build scripts for EXE/MSI generation, release-asset bundling, and checksum generation.
+Update 2026-03-08:
+- Created public GitHub repository: https://github.com/Develastic/1-click-kb-switch
+- Pushed current branch codex/initial-scaffold to origin.
+- Updated GitHub Actions policy so ordinary commits do not trigger builds; CI now runs on pull requests, manual dispatch, and releases.
+- Documented SemVer release policy in README. 

@@ -45,6 +45,19 @@ Main outputs:
 - `target\wix\*.msi`
 - `target\release-assets\`
 
+## CI and release policy
+- Ordinary commits do not trigger GitHub Actions builds.
+- Validation runs on pull requests.
+- Windows MSI artifacts are built only for manual workflow runs and published releases.
+
+## Versioning policy
+- SemVer is used.
+- Current public line starts at `0.1.0`.
+- Patch (`0.1.x`) is for fixes and installer/runtime corrections.
+- Minor (`0.x.0`) is for user-visible features or behavior changes.
+- `1.0.0` is reserved for the first Windows release that is manually validated on a real Windows machine.
+- Versions should be bumped intentionally for release work, not automatically on every commit.
+
 ## Linux native dependencies
 Ubuntu/Debian packages required for native build:
 - `libgtk-3-dev`
