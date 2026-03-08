@@ -3,8 +3,12 @@ name: ci
 on:
   pull_request:
   workflow_dispatch:
-  release:
-    types: [published]
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
 
 jobs:
   build-and-test:
@@ -31,13 +35,27 @@ jobs:
         run: cargo build --workspace --release
 
   windows-release:
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'release'
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
+      - name: Resolve release version
+        shell: pwsh
+        run: |
+          $cargoVersion = (Get-Content app/Cargo.toml | Select-String '^version = "').ToString().Split('"')[1]
+          if ("${{ github.ref_type }}" -eq "tag") {
+            $tagVersion = "${{ github.ref_name }}".Substring(1)
+            if ($tagVersion -ne $cargoVersion) {
+              throw "Tag version $tagVersion does not match app/Cargo.toml version $cargoVersion"
+            }
+            $version = $tagVersion
+          } else {
+            $version = $cargoVersion
+          }
+          "APP_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Install cargo-wix
         run: cargo install cargo-wix --version 0.3.9 --locked
       - name: Install WiX Toolset
@@ -57,9 +75,8 @@ jobs:
           Copy-Item target/wix/*.msi target/release-assets/
           Copy-Item README.md target/release-assets/
           Copy-Item LICENSE target/release-assets/
-          $version = (Get-Content app/Cargo.toml | Select-String '^version = "').ToString().Split('"')[1]
           $notes = Get-Content .github/release/windows-release-notes-template.md -Raw
-          $notes = $notes.Replace('{{version}}', $version)
+          $notes = $notes.Replace('{{version}}', $env:APP_VERSION)
           Set-Content target/release-assets/RELEASE_NOTES.md $notes
           Get-ChildItem target/release-assets | ForEach-Object {
             $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash
@@ -71,8 +88,10 @@ jobs:
           name: windows-release-bundle
           path: target/release-assets
       - name: Publish GitHub release assets
-        if: github.event_name == 'release'
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
           files: |
             target/release-assets/*

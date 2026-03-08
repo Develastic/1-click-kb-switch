@@ -5,8 +5,8 @@ edition = "2024"
 authors = ["Mykola"]
 license = "MIT"
 description = "Native-first keyboard layout switcher"
-homepage = "https://github.com/mykola/one-click-kb-switch"
-repository = "https://github.com/mykola/one-click-kb-switch"
+homepage = "https://github.com/Develastic/1-click-kb-switch"
+repository = "https://github.com/Develastic/1-click-kb-switch"
 
 [dependencies]
 once_cell = "1"

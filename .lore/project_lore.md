@@ -50,3 +50,4 @@ Update 2026-03-08:
 - Pushed current branch codex/initial-scaffold to origin.
 - Updated GitHub Actions policy so ordinary commits do not trigger builds; CI now runs on pull requests, manual dispatch, and releases.
 - Documented SemVer release policy in README. 
+- Switched release versioning policy to tag-based SemVer (`vX.Y.Z`) with workflow validation against `app/Cargo.toml`.

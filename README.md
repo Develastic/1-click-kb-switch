@@ -48,7 +48,7 @@ Main outputs:
 ## CI and release policy
 - Ordinary commits do not trigger GitHub Actions builds.
 - Validation runs on pull requests.
-- Windows MSI artifacts are built only for manual workflow runs and published releases.
+- Windows MSI artifacts are built only for manual workflow runs and version tags like `v0.1.0`.
 
 ## Versioning policy
 - SemVer is used.
@@ -57,6 +57,7 @@ Main outputs:
 - Minor (`0.x.0`) is for user-visible features or behavior changes.
 - `1.0.0` is reserved for the first Windows release that is manually validated on a real Windows machine.
 - Versions should be bumped intentionally for release work, not automatically on every commit.
+- Release tags must use the form `vX.Y.Z` and must match `app/Cargo.toml`.
 
 ## Linux native dependencies
 Ubuntu/Debian packages required for native build:
