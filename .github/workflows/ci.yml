@@ -5,27 +5,22 @@ on:
   pull_request:
 
 jobs:
-  test-and-build:
-    runs-on: ubuntu-latest
+  build-and-test:
     strategy:
       matrix:
         include:
-          - goos: linux
-            goarch: amd64
-          - goos: windows
-            goarch: amd64
+          - os: ubuntu-latest
+          - os: windows-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.26.1'
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Linux native dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libxdo-dev libayatana-appindicator3-dev
       - name: Test
-        env:
-          CGO_ENABLED: 0
-        run: go test ./...
+        run: cargo test --workspace
       - name: Build
-        env:
-          CGO_ENABLED: 0
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-        run: go build ./...
+        run: cargo build --workspace --release

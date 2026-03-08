@@ -1,36 +1,35 @@
 # One Click KB Switch
 
-Cross-platform keyboard layout switcher written in Go.
+Native-first cross-platform keyboard layout switcher.
 
-## Scope
-- Targets: Windows amd64, Linux amd64
-- CGO: disabled
-- Linux support in v1: X11 only
-- Wayland: not supported in v1
+## Stack
+- Rust
+- tao for native window/event loop
+- tray-icon for tray integration
+- global-hotkey for custom global hotkeys
+- Linux v1: X11 only
+- Windows v1: native-first scaffold
 
 ## Current state
-This repository contains the typed application scaffold, config/bootstrap logic,
-layout and hotkey logic, platform backend boundaries, tests, and CI.
+This repository contains the Rust-native application skeleton with:
+- typed config creation from embedded defaults
+- layout normalization and tray-label generation
+- default binding selection for English and first non-English layout
+- single-click detector state machine
+- tao event loop + tray menu + first-run window behavior
+- Linux X11 layout discovery and direct switching through `setxkbmap`
+- unit tests and public CI
 
-Important note: truly native cross-platform desktop UI and tray behavior without CGO are
-much more constrained than the original feature goal suggests. The current public scaffold
-therefore keeps UI and tray integration behind explicit boundaries and does not hide missing
-platform capabilities behind silent fallbacks.
+Still explicit work items:
+- low-level single-click hooks on both platforms
+- full native settings controls inside the tao window
+- Windows layout enumeration/switch implementation
 
-Implemented now:
-- typed config seeded from embedded `config.json.defaults`
-- layout detection logic and label generation
-- default binding selection for English / first non-English layout
-- `Single Click` detector state machine
-- Linux X11 layout discovery through `setxkbmap -query`
-- application bootstrap and persistence flow
-- test suite and GitHub Actions cross-builds
-
-Not yet implemented at platform level:
-- native tray icon/menu
-- native global low-level key / mouse hooks
-- actual OS layout switching on Windows and Linux
-- native graphical settings window
+## Linux native dependencies
+Ubuntu/Debian packages required for native build:
+- `libgtk-3-dev`
+- `libayatana-appindicator3-dev`
+- `libxdo-dev`
 
 ## Run
 ```bash
@@ -40,5 +39,5 @@ Not yet implemented at platform level:
 
 ## Test
 ```bash
-PATH="$HOME/.local/go1.26.1/bin:$PATH" CGO_ENABLED=0 go test ./...
+cargo test --workspace
 ```

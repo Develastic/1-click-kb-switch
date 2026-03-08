@@ -1,16 +1,14 @@
-# Go
+# Rust
+target/
+
+# Build and runtime
 bin/
 dist/
 out/
-*.test
-*.prof
-coverage.out
-
-# Build and cache
-.cache/
-.tmp/
-tmp/
 *.log
+*.pid
+*.sock
+coverage/
 
 # IDE
 .vscode/
@@ -22,12 +20,7 @@ tmp/
 .DS_Store
 Thumbs.db
 
-# Local env / internal tooling
+# Local/internal tooling
 .codex/
 .lore/
 *.local.json
-config.user.json
-
-# Runtime state
-*.pid
-*.sock
