@@ -8,7 +8,7 @@ Native-first cross-platform keyboard layout switcher.
 - tray-icon for tray integration
 - global-hotkey for custom global hotkeys
 - Linux v1: X11 only
-- Windows v1: native-first scaffold
+- Windows v1: native layout enumeration, active-layout detection, and foreground-window switching via Win32 APIs
 
 ## Current state
 This repository contains the Rust-native application skeleton with:
@@ -23,7 +23,7 @@ This repository contains the Rust-native application skeleton with:
 Still explicit work items:
 - low-level single-click hooks on both platforms
 - full native settings controls inside the tao window
-- Windows layout enumeration/switch implementation
+- Windows low-level single-click hooks
 
 ## Linux native dependencies
 Ubuntu/Debian packages required for native build:
