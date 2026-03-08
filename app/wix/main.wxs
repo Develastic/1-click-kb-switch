@@ -1,0 +1,84 @@
+<?xml version='1.0' encoding='windows-1252'?>
+<?if $(sys.BUILDARCH) = x64 or $(sys.BUILDARCH) = arm64 ?>
+  <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
+<?else ?>
+  <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
+<?endif ?>
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <Product
+    Id='*'
+    Name='One Click KB Switch'
+    UpgradeCode='1D7CE10C-6FF1-4FE2-9B86-A166803E18AB'
+    Manufacturer='Mykola'
+    Language='1033'
+    Codepage='1252'
+    Version='$(var.Version)'>
+
+    <Package
+      Id='*'
+      Keywords='Installer'
+      Description='Native-first keyboard layout switcher'
+      Manufacturer='Mykola'
+      InstallerVersion='450'
+      Languages='1033'
+      Compressed='yes'
+      InstallScope='perMachine'
+      SummaryCodepage='1252'/>
+
+    <MajorUpgrade
+      Schedule='afterInstallInitialize'
+      DowngradeErrorMessage='A newer version of [ProductName] is already installed. Setup will now exit.'/>
+
+    <Media Id='1' Cabinet='media1.cab' EmbedCab='yes'/>
+    <Property Id='WIXUI_INSTALLDIR' Value='APPLICATIONFOLDER'/>
+    <Property Id='ARPHELPLINK' Value='https://github.com/mykola/one-click-kb-switch'/>
+    <Icon Id='ProductICO' SourceFile='assets/app.ico'/>
+    <Property Id='ARPPRODUCTICON' Value='ProductICO' />
+
+    <Directory Id='TARGETDIR' Name='SourceDir'>
+      <Directory Id='$(var.PlatformProgramFilesFolder)' Name='PFiles'>
+        <Directory Id='APPLICATIONFOLDER' Name='One Click KB Switch'>
+          <Component Id='MainExecutable' Guid='*'>
+            <File
+              Id='MainExecutableFile'
+              Name='one-click-kb-switch.exe'
+              DiskId='1'
+              Source='$(var.CargoTargetBinDir)\one-click-kb-switch.exe'
+              KeyPath='yes'/>
+          </Component>
+          <Component Id='ReadmeComponent' Guid='*'>
+            <File Id='ReadmeFile' Name='README.md' DiskId='1' Source='..\README.md' KeyPath='yes'/>
+          </Component>
+          <Component Id='LicenseComponent' Guid='*'>
+            <File Id='LicenseFile' Name='LICENSE' DiskId='1' Source='..\LICENSE' KeyPath='yes'/>
+          </Component>
+        </Directory>
+      </Directory>
+      <Directory Id='ProgramMenuFolder'>
+        <Directory Id='ApplicationProgramsFolder' Name='One Click KB Switch'>
+          <Component Id='ProgramMenuShortcut' Guid='*'>
+            <Shortcut
+              Id='ApplicationStartMenuShortcut'
+              Name='One Click KB Switch'
+              Description='One Click KB Switch'
+              Target='[APPLICATIONFOLDER]one-click-kb-switch.exe'
+              WorkingDirectory='APPLICATIONFOLDER'/>
+            <RemoveFolder Id='ApplicationProgramsFolderRemove' On='uninstall'/>
+            <RegistryValue Root='HKCU' Key='Software\OneClickKBSwitch' Name='installed' Type='integer' Value='1' KeyPath='yes'/>
+          </Component>
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <Feature Id='MainApplication' Title='One Click KB Switch' Level='1'>
+      <ComponentRef Id='MainExecutable'/>
+      <ComponentRef Id='ReadmeComponent'/>
+      <ComponentRef Id='LicenseComponent'/>
+      <ComponentRef Id='ProgramMenuShortcut'/>
+    </Feature>
+
+    <UI>
+      <UIRef Id='WixUI_InstallDir'/>
+    </UI>
+  </Product>
+</Wix>

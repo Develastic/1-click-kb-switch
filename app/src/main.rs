@@ -9,5 +9,5 @@ fn main() -> Result<()> {
     let service = AppService::new(build_backend());
     let model = service.bootstrap(paths)?;
     service.persist(&model)?;
-    ui::run(model)
+    ui::run(service, model)
 }

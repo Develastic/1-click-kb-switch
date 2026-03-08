@@ -17,6 +17,8 @@ pub trait PlatformBackend {
 pub mod linux_x11;
 #[cfg(target_os = "windows")]
 pub mod windows;
+#[cfg(target_os = "windows")]
+pub mod windows_hooks;
 
 pub fn build_backend() -> Box<dyn PlatformBackend> {
     #[cfg(target_os = "linux")]

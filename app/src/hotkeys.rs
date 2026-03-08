@@ -1,5 +1,8 @@
+use anyhow::{Result, anyhow};
+use global_hotkey::hotkey::{Code, HotKey, Modifiers};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::str::FromStr;
 use thiserror::Error;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -112,6 +115,76 @@ pub fn validate_unique(bindings: &[HotkeyBinding]) -> Result<(), HotkeyError> {
     Ok(())
 }
 
+pub fn display_for_combo(modifiers: &[String], key: &str) -> String {
+    let mut parts = normalize_modifier_names(modifiers);
+    parts.push(key.to_string());
+    parts.join(" + ")
+}
+
+pub fn normalize_modifier_names(modifiers: &[String]) -> Vec<String> {
+    let mut normalized = modifiers
+        .iter()
+        .filter_map(|item| match item.trim().to_lowercase().as_str() {
+            "ctrl" | "control" => Some("Ctrl".to_string()),
+            "alt" => Some("Alt".to_string()),
+            "shift" => Some("Shift".to_string()),
+            "meta" | "super" | "win" => Some("Meta".to_string()),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    normalized.sort();
+    normalized.dedup();
+    normalized
+}
+
+pub fn custom_bindings(bindings: &[HotkeyBinding]) -> Vec<HotkeyBinding> {
+    bindings
+        .iter()
+        .filter(|item| item.is_custom)
+        .cloned()
+        .collect()
+}
+
+pub fn upsert_custom_binding(
+    bindings: &mut Vec<HotkeyBinding>,
+    binding: HotkeyBinding,
+) -> Result<()> {
+    bindings.retain(|item| !(item.is_custom && item.layout_id == binding.layout_id));
+    bindings.push(binding);
+    validate_unique(bindings).map_err(|err| anyhow!(err.to_string()))
+}
+
+pub fn clear_custom_binding(bindings: &mut Vec<HotkeyBinding>, layout_id: &str) -> bool {
+    let before = bindings.len();
+    bindings.retain(|item| !(item.is_custom && item.layout_id == layout_id));
+    before != bindings.len()
+}
+
+pub fn binding_to_global_hotkey(binding: &HotkeyBinding) -> Result<HotKey> {
+    if !matches!(binding.binding_type, BindingType::Combo) {
+        return Err(anyhow!(
+            "only combo bindings can be converted to global hotkeys"
+        ));
+    }
+
+    let mods = normalize_modifier_names(&binding.modifiers)
+        .into_iter()
+        .fold(Modifiers::empty(), |mut acc, item| {
+            match item.as_str() {
+                "Ctrl" => acc |= Modifiers::CONTROL,
+                "Alt" => acc |= Modifiers::ALT,
+                "Shift" => acc |= Modifiers::SHIFT,
+                "Meta" => acc |= Modifiers::SUPER,
+                _ => {}
+            }
+            acc
+        });
+
+    let code = Code::from_str(&binding.key)
+        .map_err(|err| anyhow!("unsupported hotkey key {}: {err}", binding.key))?;
+    Ok(HotKey::new((!mods.is_empty()).then_some(mods), code))
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InputEventKind {
     KeyDown,
@@ -207,6 +280,32 @@ mod tests {
             },
         ];
         assert!(validate_unique(&bindings).is_err());
+    }
+
+    #[test]
+    fn custom_binding_replaces_previous_one_for_same_layout() {
+        let mut bindings = vec![HotkeyBinding {
+            layout_id: "ru".into(),
+            binding_type: BindingType::Combo,
+            key: "KeyQ".into(),
+            modifiers: vec!["Ctrl".into()],
+            display: "Ctrl + KeyQ".into(),
+            is_custom: true,
+        }];
+        upsert_custom_binding(
+            &mut bindings,
+            HotkeyBinding {
+                layout_id: "ru".into(),
+                binding_type: BindingType::Combo,
+                key: "KeyW".into(),
+                modifiers: vec!["Ctrl".into()],
+                display: "Ctrl + KeyW".into(),
+                is_custom: true,
+            },
+        )
+        .unwrap();
+        assert_eq!(bindings.len(), 1);
+        assert_eq!(bindings[0].key, "KeyW");
     }
 
     #[test]
