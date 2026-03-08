@@ -1,11 +1,18 @@
 # Windows release guide
 
 ## Local release build
-1. Install Rust stable, WiX Toolset, and cargo-wix.
-2. Run `cargo test --workspace`.
-3. Run `cargo build --workspace --release --target x86_64-pc-windows-msvc`.
-4. From `/app`, run `cargo wix --package one-click-kb-switch --target x86_64-pc-windows-msvc --output ../target/wix/`.
-5. Generate checksums for the MSI and executable.
+1. Install Rust stable, WiX Toolset v3, and cargo-wix.
+2. Run `build-windows.bat` from the repository root on Windows.
+3. Optional flags:
+   - `-SkipTests`
+   - `-SkipMsi`
+   - `-SkipChecksums`
+4. The script builds the release EXE, builds the MSI, copies release assets, and generates SHA-256 checksums.
+
+## Output paths
+- EXE: `target\x86_64-pc-windows-msvc\release\one-click-kb-switch.exe`
+- MSI: `target\wix\*.msi`
+- Release bundle: `target\release-assets\`
 
 ## Release checklist
 - Confirm low-level single-click switching works on a real Windows machine.

@@ -34,6 +34,17 @@ This repository now contains a Windows-oriented native scaffold with:
 - Low-level single-click switching is implemented for `RightCtrl` and `RightShift`.
 - Custom combos are registered through `global-hotkey`.
 
+## Windows local build
+On Windows, build the EXE and MSI locally with:
+```bat
+build-windows.bat
+```
+
+Main outputs:
+- `target\x86_64-pc-windows-msvc\release\one-click-kb-switch.exe`
+- `target\wix\*.msi`
+- `target\release-assets\`
+
 ## Linux native dependencies
 Ubuntu/Debian packages required for native build:
 - `libgtk-3-dev`
