@@ -1,0 +1,33 @@
+# Go
+bin/
+dist/
+out/
+*.test
+*.prof
+coverage.out
+
+# Build and cache
+.cache/
+.tmp/
+tmp/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local env / internal tooling
+.codex/
+.lore/
+*.local.json
+config.user.json
+
+# Runtime state
+*.pid
+*.sock
