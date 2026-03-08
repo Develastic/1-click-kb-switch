@@ -42,3 +42,5 @@ The project uses Python 3.12 with CustomTkinter for the main window and pystray 
 - 2026-03-08: Tray icon rendering must use a real font to avoid mirrored glyph defects.
 - 2026-03-08: MSI installer must offer launching the app after install, opt-out by checkbox.
 - 2026-03-08: Wayland is experimental only and must show explicit warnings instead of pretending to support unsupported global hook behavior.
+
+- 2026-03-08: Fixed Python startup on non-Windows hosts by making Windows backend import lazy in platform factory.
