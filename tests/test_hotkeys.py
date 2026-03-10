@@ -6,8 +6,8 @@ from one_click_kb_switch.core.models import HotkeyBinding
 
 def test_default_bindings():
     bindings = default_bindings('us', 'gr')
-    assert bindings[0].trigger_key == 'RightCtrl'
-    assert bindings[1].trigger_key == 'RightShift'
+    assert bindings[0].trigger_key == 'LeftCtrl'
+    assert bindings[1].trigger_key == 'LeftShift'
 
 
 def test_conflicts_are_rejected():

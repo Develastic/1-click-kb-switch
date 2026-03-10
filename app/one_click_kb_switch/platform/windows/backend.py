@@ -22,7 +22,9 @@ WM_SYSKEYUP = 0x0105
 WM_RBUTTONDOWN = 0x0204
 WM_LBUTTONDOWN = 0x0201
 HC_ACTION = 0
+VK_LCONTROL = 0xA2
 VK_RCONTROL = 0xA3
+VK_LSHIFT = 0xA0
 VK_RSHIFT = 0xA1
 
 
@@ -106,7 +108,7 @@ class WindowsBackend(PlatformBackend):
         def keyboard_proc(code: int, wparam: WPARAM, lparam: LPARAM) -> LRESULT:
             if code == HC_ACTION and self._callback:
                 payload = cast(lparam, POINTER(KBDLLHOOKSTRUCT)).contents
-                key_name = {VK_RCONTROL: "RightCtrl", VK_RSHIFT: "RightShift"}.get(payload.vkCode, f"VK_{payload.vkCode}")
+                key_name = {VK_LCONTROL: "LeftCtrl", VK_RCONTROL: "RightCtrl", VK_LSHIFT: "LeftShift", VK_RSHIFT: "RightShift"}.get(payload.vkCode, f"VK_{payload.vkCode}")
                 if wparam in {WM_KEYDOWN, WM_SYSKEYDOWN}:
                     self._callback(InputEvent(key=key_name, kind="down"))
                 elif wparam in {WM_KEYUP, WM_SYSKEYUP}:

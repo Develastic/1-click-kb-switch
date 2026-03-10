@@ -24,8 +24,8 @@ With a cyclic switcher, a hotkey only means “go to the next layout”, so you 
 - Subsequent launches start hidden in tray
 - Tray menu is intentionally minimal: `Show main window`, `Exit`
 - Default directed bindings:
-  - `RightCtrl` → first detected English layout
-  - `RightShift` → first detected non-English layout
+  - `LeftCtrl` → first detected English layout
+  - `LeftShift` → first detected non-English layout
 - Custom bindings can be assigned per layout
 - Tray labels are rendered with a real font to avoid mirrored glyph issues
 - Linux tray menu uses the AppIndicator backend, not the limited XOrg fallback

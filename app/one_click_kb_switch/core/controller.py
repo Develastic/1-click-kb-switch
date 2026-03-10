@@ -5,7 +5,7 @@ import sys
 from typing import Callable
 
 from one_click_kb_switch.core.config import AppConfig
-from one_click_kb_switch.core.hotkeys import InputEvent, SingleClickDetector, default_bindings
+from one_click_kb_switch.core.hotkeys import InputEvent, SingleClickDetector, default_bindings, has_legacy_default_bindings
 from one_click_kb_switch.core.layouts import build_layout, choose_default_pair
 from one_click_kb_switch.core.models import HotkeyBinding, LayoutInfo, PlatformWarning, RuntimeState
 from one_click_kb_switch.platform.base import PlatformBackend
@@ -29,7 +29,7 @@ class RuntimeController:
         raw_layouts = backend.list_layouts()
         layouts = [build_layout(item.layout_id, item.display_name, config.label_overrides.get(item.layout_id, "")) for item in raw_layouts]
         english, non_english = choose_default_pair(layouts)
-        if not config.hotkeys:
+        if not config.hotkeys or has_legacy_default_bindings(config.hotkeys, english, non_english):
             config.hotkeys = default_bindings(english, non_english)
             config.save()
         state = RuntimeState(first_run=first_run)

@@ -80,11 +80,11 @@ class LinuxX11Backend(PlatformBackend):
                 event, data = rq.EventField(None).parse_binary_value(data, self._local_display.display, None, None)
                 if event.type == X.KeyPress:
                     key = self._local_display.keycode_to_keysym(event.detail, 0)
-                    key_name = {105: "RightCtrl", 62: "RightShift"}.get(event.detail, str(key))
+                    key_name = {37: "LeftCtrl", 105: "RightCtrl", 50: "LeftShift", 62: "RightShift"}.get(event.detail, str(key))
                     callback(InputEvent(key=key_name, kind="down"))
                 elif event.type == X.KeyRelease:
                     key = self._local_display.keycode_to_keysym(event.detail, 0)
-                    key_name = {105: "RightCtrl", 62: "RightShift"}.get(event.detail, str(key))
+                    key_name = {37: "LeftCtrl", 105: "RightCtrl", 50: "LeftShift", 62: "RightShift"}.get(event.detail, str(key))
                     callback(InputEvent(key=key_name, kind="up"))
                 elif event.type in {X.ButtonPress, X.ButtonRelease}:
                     callback(InputEvent(key="Mouse", kind="mouse"))

@@ -4,6 +4,11 @@ from dataclasses import dataclass
 
 from one_click_kb_switch.core.models import HotkeyBinding
 
+PRIMARY_DEFAULT_KEY = "LeftCtrl"
+SECONDARY_DEFAULT_KEY = "LeftShift"
+LEGACY_PRIMARY_DEFAULT_KEY = "RightCtrl"
+LEGACY_SECONDARY_DEFAULT_KEY = "RightShift"
+
 
 class HotkeyConflictError(ValueError):
     pass
@@ -44,10 +49,26 @@ def validate_unique(bindings: list[HotkeyBinding]) -> None:
 def default_bindings(english_layout_id: str | None, non_english_layout_id: str | None) -> list[HotkeyBinding]:
     bindings: list[HotkeyBinding] = []
     if english_layout_id:
-        bindings.append(HotkeyBinding(layout_id=english_layout_id, binding_type="single_click", trigger_key="RightCtrl"))
+        bindings.append(HotkeyBinding(layout_id=english_layout_id, binding_type="single_click", trigger_key=PRIMARY_DEFAULT_KEY))
     if non_english_layout_id:
-        bindings.append(HotkeyBinding(layout_id=non_english_layout_id, binding_type="single_click", trigger_key="RightShift"))
+        bindings.append(HotkeyBinding(layout_id=non_english_layout_id, binding_type="single_click", trigger_key=SECONDARY_DEFAULT_KEY))
     return bindings
+
+
+def legacy_default_bindings(english_layout_id: str | None, non_english_layout_id: str | None) -> list[HotkeyBinding]:
+    bindings: list[HotkeyBinding] = []
+    if english_layout_id:
+        bindings.append(HotkeyBinding(layout_id=english_layout_id, binding_type="single_click", trigger_key=LEGACY_PRIMARY_DEFAULT_KEY))
+    if non_english_layout_id:
+        bindings.append(HotkeyBinding(layout_id=non_english_layout_id, binding_type="single_click", trigger_key=LEGACY_SECONDARY_DEFAULT_KEY))
+    return bindings
+
+
+def has_legacy_default_bindings(bindings: list[HotkeyBinding], english_layout_id: str | None, non_english_layout_id: str | None) -> bool:
+    legacy = legacy_default_bindings(english_layout_id, non_english_layout_id)
+    if len(bindings) != len(legacy):
+        return False
+    return {canonical_binding(item) for item in bindings} == {canonical_binding(item) for item in legacy}
 
 
 def upsert_custom_binding(bindings: list[HotkeyBinding], new_binding: HotkeyBinding) -> list[HotkeyBinding]:
