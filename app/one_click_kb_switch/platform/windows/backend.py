@@ -97,6 +97,13 @@ class WindowsBackend(PlatformBackend):
     def get_platform_warnings(self) -> list[PlatformWarning]:
         return []
 
+    def debug_snapshot(self) -> dict[str, object]:
+        return {
+            "backend": "windows-winapi",
+            "installed_layouts": [item.layout_id for item in self.list_layouts()],
+            "active_layout": self.get_active_layout(),
+        }
+
     def _run_hook_loop(self) -> None:
         from ctypes import CFUNCTYPE, cast
         from ctypes.wintypes import MSG

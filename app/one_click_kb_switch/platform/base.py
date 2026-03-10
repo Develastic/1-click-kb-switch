@@ -31,3 +31,7 @@ class PlatformBackend(ABC):
     @abstractmethod
     def get_platform_warnings(self) -> list[PlatformWarning]:
         raise NotImplementedError
+
+    @abstractmethod
+    def debug_snapshot(self) -> dict[str, object]:
+        raise NotImplementedError

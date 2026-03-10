@@ -64,3 +64,10 @@ Linux:
 ## License and agreement
 - License: MIT
 - End-user agreement: `/home/mykola/src/1-click-kb-switch/EULA.md`
+
+## Debug mode
+Run the app with verbose diagnostics when Linux layout detection or switching looks suspicious:
+```bash
+uv run python app/main.py --debug
+```
+The console log prints the selected platform backend, detected switching system, installed layouts, XKB options, active layout, and current config bindings.
