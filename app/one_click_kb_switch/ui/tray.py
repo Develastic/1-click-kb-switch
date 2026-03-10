@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+import os
+import sys
 from pathlib import Path
 from threading import Thread
 from typing import Callable
 
 from PIL import Image, ImageDraw, ImageFont
+
+if sys.platform.startswith("linux") and os.environ.get("XDG_SESSION_TYPE", "").lower() == "x11":
+    os.environ.setdefault("PYSTRAY_BACKEND", "gtk")
+
 import pystray
 
 from one_click_kb_switch.config import load_metadata
