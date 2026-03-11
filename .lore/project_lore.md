@@ -56,3 +56,4 @@ The project uses Python 3.12 with CustomTkinter for the main window and pystray 
 - 2026-03-11: Single-instance lock is now acquired before HTML log initialization so a second launch exits cleanly instead of crashing inside pylogrouter log ownership checks.
 - 2026-03-11: Windows packaging switched from WiX/MSI to Inno Setup EXE named `1-click-kb-switch-setup.exe`; GitHub packaging was removed in favor of local Bottles/Windows builds.
 - 2026-03-11: Verified local Bottles build flow end-to-end; `./build-windows.sh` now stages the project directly into bottle `drive_c`, runs Windows pytest + PyInstaller + Inno Setup, and produces `output/windows/1-click-kb-switch-setup.exe`.
+- 2026-03-11: Linux X11 directed switching no longer rewrites XKB configuration; it now reuses the user's existing `grp:*` toggle option via XTEST key synthesis, preserving configured variants such as `ru:rud_rus`.

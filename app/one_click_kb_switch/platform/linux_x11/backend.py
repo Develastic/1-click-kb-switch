@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 from threading import Event, Thread
+import time
 from typing import Callable
 
 from Xlib import X, display
 from Xlib.ext import record
+from Xlib.ext import xtest
+from Xlib.keysymdef import latin1
+from Xlib.XK import string_to_keysym
 from Xlib.protocol import rq
 
 from one_click_kb_switch.core.hotkeys import InputEvent
@@ -21,6 +26,26 @@ KEYCODE_MAP = {
     105: "RightCtrl",
     50: "LeftShift",
     62: "RightShift",
+}
+
+TOGGLE_OPTION_KEY_MAP: dict[str, list[str]] = {
+    "grp:ctrl_space_toggle": ["LeftCtrl", "Space"],
+    "grp:alt_shift_toggle": ["LeftAlt", "LeftShift"],
+    "grp:ctrl_shift_toggle": ["LeftCtrl", "LeftShift"],
+    "grp:lalt_toggle": ["LeftAlt"],
+    "grp:ralt_toggle": ["RightAlt"],
+    "grp:shift_caps_toggle": ["LeftShift", "CapsLock"],
+}
+
+KEYSYM_NAME_MAP = {
+    "LeftCtrl": "Control_L",
+    "RightCtrl": "Control_R",
+    "LeftShift": "Shift_L",
+    "RightShift": "Shift_R",
+    "LeftAlt": "Alt_L",
+    "RightAlt": "Alt_R",
+    "Space": "space",
+    "CapsLock": "Caps_Lock",
 }
 
 
@@ -56,8 +81,29 @@ class LinuxX11Backend(PlatformBackend):
         available_ids = [str(item["layout_id"]) for item in query["layouts"]]
         if layout_id not in available_ids:
             raise RuntimeError(f"Requested layout is not part of the current XKB configuration: {layout_id}")
+        target_index = available_ids.index(layout_id)
+        current_index = self._active_group_index()
+        if current_index == target_index:
+            self._logger.debug("linux_x11 switch skipped: target layout already active")
+            return
+
+        toggle_sequence = self._resolve_toggle_sequence(query)
+        if not toggle_sequence:
+            raise RuntimeError(
+                "Unable to switch layouts safely on Linux X11 because the current user switching method is not recognized. Run with --debug and inspect the reported XKB options."
+            )
+
+        max_attempts = max(len(available_ids), 1)
+        for _ in range(max_attempts):
+            self._emit_key_combo(toggle_sequence)
+            time.sleep(0.05)
+            current_index = self._active_group_index()
+            if current_index == target_index:
+                self._logger.debug("linux_x11 switch succeeded using existing toggle sequence: %s", "+".join(toggle_sequence))
+                return
+
         raise RuntimeError(
-            "Linux X11 directed switching is temporarily disabled in this build because the current implementation cannot switch layouts without risking user XKB settings. Run with --debug and inspect the console diagnostics."
+            f"Failed to reach requested layout '{layout_id}' through the user's existing XKB toggle path ({'+'.join(toggle_sequence)})."
         )
 
     def start_input_hooks(self, callback: Callable[[InputEvent], None]) -> None:
@@ -75,10 +121,13 @@ class LinuxX11Backend(PlatformBackend):
         self._logger.debug("linux_x11 input hooks stopped")
 
     def get_platform_warnings(self) -> list[PlatformWarning]:
+        query = self._query_xkb_state()
+        if self._resolve_toggle_sequence(query):
+            return []
         return [
             PlatformWarning(
-                code="linux-x11-switch-disabled",
-                message="Linux X11 directed switching is disabled in this build until a non-destructive layout switch path is implemented.",
+                code="linux-x11-switch-unsupported",
+                message="Linux X11 switching is limited because the current XKB toggle option is not recognized by this build.",
             )
         ]
 
@@ -90,6 +139,7 @@ class LinuxX11Backend(PlatformBackend):
             "desktop": os.environ.get("XDG_CURRENT_DESKTOP", ""),
             "display": os.environ.get("DISPLAY", ""),
             "switching_system_detected": self._detect_switching_system(query),
+            "toggle_sequence": self._resolve_toggle_sequence(query),
             "commands": {
                 "setxkbmap": shutil.which("setxkbmap"),
                 "localectl": shutil.which("localectl"),
@@ -148,9 +198,23 @@ class LinuxX11Backend(PlatformBackend):
         return parsed
 
     def _active_group_index(self) -> int:
+        if shutil.which("xkb-switch"):
+            try:
+                active = subprocess.check_output(["xkb-switch", "-p"], text=True).strip()
+                query = self._query_xkb_state()
+                available_ids = [str(item["layout_id"]) for item in query["layouts"]]
+                if active in available_ids:
+                    return available_ids.index(active)
+            except subprocess.CalledProcessError:
+                pass
         output = self._run_optional_command(["xset", "-q"])
         if not output:
             return 0
+        active_group = 0
+        for match in re.finditer(r"Group\s+(\d+):\s+on", output, re.IGNORECASE):
+            active_group = max(active_group, int(match.group(1)) - 1)
+        if active_group:
+            return active_group
         for line in output.splitlines():
             if "Group 2:" in line and "on" in line.lower():
                 return 1
@@ -206,3 +270,39 @@ class LinuxX11Backend(PlatformBackend):
             "options": options,
             "layouts": parsed_layouts,
         }
+
+    def _resolve_toggle_sequence(self, query: dict[str, object]) -> list[str] | None:
+        options = [str(item) for item in query.get("options", [])]
+        for option in options:
+            if option in TOGGLE_OPTION_KEY_MAP:
+                return TOGGLE_OPTION_KEY_MAP[option]
+        return None
+
+    def _emit_key_combo(self, keys: list[str]) -> None:
+        local_display = display.Display()
+        if not local_display.query_extension("XTEST").present:
+            local_display.close()
+            raise RuntimeError("XTEST extension is unavailable, cannot synthesize the user's configured layout toggle")
+        try:
+            keycodes = [self._keycode_for_name(local_display, key_name) for key_name in keys]
+            for keycode in keycodes:
+                xtest.fake_input(local_display, X.KeyPress, keycode)
+            for keycode in reversed(keycodes):
+                xtest.fake_input(local_display, X.KeyRelease, keycode)
+            local_display.sync()
+        finally:
+            local_display.close()
+
+    def _keycode_for_name(self, local_display: display.Display, key_name: str) -> int:
+        keysym_name = KEYSYM_NAME_MAP.get(key_name, key_name)
+        keysym = string_to_keysym(keysym_name)
+        if keysym == 0 and len(keysym_name) == 1:
+            keysym = ord(keysym_name)
+        if keysym == 0:
+            keysym = getattr(latin1, f"XK_{keysym_name}", 0)
+        if keysym == 0:
+            raise RuntimeError(f"Unsupported synthetic toggle key: {key_name}")
+        keycode = local_display.keysym_to_keycode(keysym)
+        if keycode == 0:
+            raise RuntimeError(f"Unable to resolve X11 keycode for toggle key: {key_name}")
+        return keycode

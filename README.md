@@ -10,7 +10,7 @@ With a cyclic switcher, a hotkey only means “go to the next layout”, so you 
 - Native platform backends
 - pylogrouter for console and HTML session logs
 - Windows x64: supported
-- Linux X11 x64: supported with diagnostics-first switch path
+- Linux X11 x64: supported through the user's existing XKB toggle path when the configured `grp:*` option is recognized
 - Linux Wayland: experimental
 
 ## Identity
