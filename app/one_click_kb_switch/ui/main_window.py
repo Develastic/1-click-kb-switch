@@ -166,7 +166,18 @@ class MainWindow:
 
             layout_box = self._make_section(row, "Layout")
             layout_box.grid(row=0, column=0, sticky="nsew", padx=(16, 10), pady=14)
-            ctk.CTkLabel(layout_box, text=layout.display_name, text_color=TEXT, font=ctk.CTkFont(size=17, weight="bold"), anchor="w").grid(row=1, column=0, sticky="w", padx=14)
+            title_row = ctk.CTkFrame(layout_box, fg_color="transparent")
+            title_row.grid(row=1, column=0, sticky="ew", padx=14)
+            title_row.grid_columnconfigure(0, weight=1)
+            ctk.CTkLabel(title_row, text=layout.display_name, text_color=TEXT, font=ctk.CTkFont(size=17, weight="bold"), anchor="w").grid(row=0, column=0, sticky="w")
+            ctk.CTkButton(
+                title_row,
+                text="✎",
+                width=32,
+                fg_color=ACCENT,
+                hover_color="#1858bb",
+                command=lambda layout_id=layout.layout_id: self._edit_label(layout_id),
+            ).grid(row=0, column=1, sticky="e")
             ctk.CTkLabel(layout_box, text=f"ID: {layout.layout_id}", text_color=MUTED, font=ctk.CTkFont(size=12), anchor="w").grid(row=2, column=0, sticky="w", padx=14, pady=(6, 0))
             role_text = "English layout" if layout.is_english else "Non-English layout"
             role_color = SUCCESS_BG if layout.is_english else ACCENT_SOFT
@@ -180,18 +191,8 @@ class MainWindow:
                 padx=10,
                 pady=5,
             ).grid(row=0, column=0, sticky="w", padx=14, pady=(0, 10))
-            label_row = ctk.CTkFrame(layout_box, fg_color="transparent")
-            label_row.grid(row=3, column=0, sticky="w", padx=14, pady=(12, 14))
-            effective_chip = ctk.CTkLabel(label_row, text=f"{layout.effective_label}", fg_color=ACCENT_SOFT, text_color=ACCENT, corner_radius=999, padx=10, pady=6)
-            effective_chip.grid(row=0, column=0, sticky="w")
-            ctk.CTkButton(
-                label_row,
-                text="✎",
-                width=36,
-                fg_color=ACCENT,
-                hover_color="#1858bb",
-                command=lambda layout_id=layout.layout_id: self._edit_label(layout_id),
-            ).grid(row=0, column=1, sticky="w", padx=(8, 0))
+            effective_chip = ctk.CTkLabel(layout_box, text=layout.effective_label, fg_color=ACCENT_SOFT, text_color=ACCENT, corner_radius=999, padx=10, pady=6)
+            effective_chip.grid(row=3, column=0, sticky="w", padx=14, pady=(12, 14))
 
             binding_box = self._make_section(row, "Directed single-click")
             binding_box.grid(row=0, column=1, sticky="nsew", padx=10, pady=14)
@@ -223,15 +224,6 @@ class MainWindow:
             combo_text = self._details_text(layout.layout_id)
             combo_summary = ctk.CTkLabel(actions, text=combo_text, text_color=TEXT, justify="left", wraplength=260, anchor="w")
             combo_summary.grid(row=1, column=0, sticky="w", padx=14)
-            ctk.CTkButton(
-                actions,
-                text="Ignore layout",
-                width=128,
-                fg_color="#eef1f5",
-                text_color=TEXT,
-                hover_color="#dfe5ee",
-                command=lambda layout_id=layout.layout_id: self._ignore_layout(layout_id),
-            ).grid(row=2, column=0, sticky="w", padx=14, pady=(10, 14))
 
             self._layout_rows[layout.layout_id] = {
                 "binding": binding_label,
@@ -255,7 +247,7 @@ class MainWindow:
         if single:
             return "A default directed modifier is assigned. Pick Custom in the selector if you need a different key or combination."
         if not combo:
-            return "No directed hotkey assigned."
+            return "This layout is ignored in directed switching."
         modifier_text = " + ".join(combo.modifiers)
         return f"Current custom hotkey: {modifier_text} + {combo.trigger_key}" if modifier_text else f"Current custom hotkey: {combo.trigger_key}"
 
