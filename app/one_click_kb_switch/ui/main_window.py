@@ -3,9 +3,11 @@ from __future__ import annotations
 import sys
 import tkinter as tk
 from tkinter import messagebox
+import webbrowser
 
 import customtkinter as ctk
 
+from one_click_kb_switch.config import load_metadata
 from one_click_kb_switch.core.controller import RuntimeController
 from one_click_kb_switch.core.hotkeys import (
     PRIMARY_DEFAULT_KEY,
@@ -15,6 +17,7 @@ from one_click_kb_switch.core.hotkeys import (
     normalize_modifier_names,
 )
 from one_click_kb_switch.core.models import LayoutInfo
+from one_click_kb_switch.paths import bundle_root
 from one_click_kb_switch.ui.tray import TrayIcon
 
 
@@ -55,6 +58,7 @@ class MainWindow:
     def __init__(self, root: ctk.CTk, controller: RuntimeController) -> None:
         self.root = root
         self.controller = controller
+        self.metadata = load_metadata()
         self.exit_requested = False
         self._label_vars: dict[str, tk.StringVar] = {}
         self._single_click_vars: dict[str, tk.StringVar] = {}
@@ -83,6 +87,7 @@ class MainWindow:
         self._build_header(shell)
         self._build_overview(shell)
         self._build_layout_table(shell)
+        self._build_footer(shell)
 
     def _build_header(self, parent: ctk.CTkFrame) -> None:
         header = ctk.CTkFrame(parent, fg_color=ACCENT, corner_radius=18)
@@ -154,6 +159,36 @@ class MainWindow:
         self.layouts_frame.grid(row=1, column=0, sticky="nsew", padx=16, pady=(0, 16))
         self.layouts_frame.grid_columnconfigure(0, weight=1)
         self._render_layouts()
+
+    def _build_footer(self, parent: ctk.CTkFrame) -> None:
+        footer = ctk.CTkFrame(parent, fg_color="transparent")
+        footer.grid(row=3, column=0, sticky="ew", pady=(10, 0))
+        footer.grid_columnconfigure(0, weight=1)
+
+        left = ctk.CTkFrame(footer, fg_color="transparent")
+        left.grid(row=0, column=0, sticky="w")
+        ctk.CTkLabel(left, text="© Develastic", text_color=MUTED, font=ctk.CTkFont(size=SMALL_FONT)).pack(side="left")
+        ctk.CTkButton(
+            left,
+            text=self.metadata.company_url,
+            fg_color="transparent",
+            hover=False,
+            text_color=ACCENT,
+            font=ctk.CTkFont(size=SMALL_FONT, underline=True),
+            width=120,
+            command=lambda: webbrowser.open(self.metadata.company_url),
+        ).pack(side="left", padx=(10, 0))
+
+        ctk.CTkButton(
+            footer,
+            text="MIT License",
+            fg_color="transparent",
+            hover=False,
+            text_color=ACCENT,
+            font=ctk.CTkFont(size=SMALL_FONT, underline=True),
+            width=90,
+            command=self._open_license,
+        ).grid(row=0, column=1, sticky="e")
 
     def _render_layouts(self) -> None:
         for child in self.layouts_frame.winfo_children():
@@ -265,14 +300,14 @@ class MainWindow:
         layout = next(item for item in self.controller.layouts if item.layout_id == layout_id)
         dialog = ctk.CTkToplevel(self.root)
         dialog.title("Edit tray label")
-        dialog.geometry("360x180")
+        dialog.geometry("340x170")
         dialog.resizable(False, False)
         dialog.configure(fg_color=SURFACE)
-        ctk.CTkLabel(dialog, text="Edit tray label", text_color=TEXT, font=ctk.CTkFont(size=20, weight="bold")).pack(anchor="w", padx=18, pady=(18, 8))
-        ctk.CTkLabel(dialog, text=f"Auto label for {layout.display_name}: {layout.auto_label}", text_color=MUTED, justify="left").pack(anchor="w", padx=18, pady=(0, 12))
+        ctk.CTkLabel(dialog, text="Edit tray label", text_color=TEXT, font=ctk.CTkFont(size=18, weight="bold")).pack(anchor="w", padx=16, pady=(16, 6))
+        ctk.CTkLabel(dialog, text=f"{layout.display_name} · auto label {layout.auto_label}", text_color=MUTED, justify="left", font=ctk.CTkFont(size=SMALL_FONT)).pack(anchor="w", padx=16, pady=(0, 10))
         value = tk.StringVar(value=layout.label_override)
         entry = ctk.CTkEntry(dialog, textvariable=value, placeholder_text="Leave empty to use auto label")
-        entry.pack(fill="x", padx=18, pady=(0, 16))
+        entry.pack(fill="x", padx=16, pady=(0, 14))
 
         def save() -> None:
             self.controller.update_label_override(layout_id, value.get())
@@ -282,7 +317,7 @@ class MainWindow:
             dialog.destroy()
 
         buttons = ctk.CTkFrame(dialog, fg_color="transparent")
-        buttons.pack(fill="x", padx=18)
+        buttons.pack(fill="x", padx=16)
         ctk.CTkButton(buttons, text="Save", fg_color=ACCENT, hover_color="#1858bb", command=save).pack(side="left")
         ctk.CTkButton(buttons, text="Cancel", fg_color="#eef1f5", text_color=TEXT, hover_color="#dfe5ee", command=dialog.destroy).pack(side="left", padx=(10, 0))
         dialog.focus_force()
@@ -311,13 +346,13 @@ class MainWindow:
     def _capture_custom(self, layout_id: str) -> None:
         dialog = ctk.CTkToplevel(self.root)
         dialog.title("Capture custom hotkey")
-        dialog.geometry("420x250")
+        dialog.geometry("400x220")
         dialog.resizable(False, False)
         dialog.configure(fg_color=SURFACE)
-        ctk.CTkLabel(dialog, text="Capture a custom hotkey", text_color=TEXT, font=ctk.CTkFont(size=20, weight="bold")).pack(anchor="w", padx=18, pady=(18, 8))
-        ctk.CTkLabel(dialog, text="Hold modifiers first, then press the final key. Use this only for layouts that need an extra directed shortcut.", text_color=MUTED, justify="left", wraplength=360).pack(anchor="w", padx=18, pady=(0, 12))
-        result = ctk.CTkLabel(dialog, text="Waiting for input…", fg_color=ACCENT_SOFT, text_color=ACCENT, corner_radius=12, padx=12, pady=12)
-        result.pack(fill="x", padx=18, pady=(0, 14))
+        ctk.CTkLabel(dialog, text="Capture custom hotkey", text_color=TEXT, font=ctk.CTkFont(size=18, weight="bold")).pack(anchor="w", padx=16, pady=(16, 6))
+        ctk.CTkLabel(dialog, text="Hold modifiers, then press the final key.", text_color=MUTED, justify="left", wraplength=340, font=ctk.CTkFont(size=SMALL_FONT)).pack(anchor="w", padx=16, pady=(0, 10))
+        result = ctk.CTkLabel(dialog, text="Waiting for input…", fg_color=ACCENT_SOFT, text_color=ACCENT, corner_radius=12, padx=12, pady=10, font=ctk.CTkFont(size=BODY_FONT, weight="bold"))
+        result.pack(fill="x", padx=16, pady=(0, 12))
         state = {"modifiers": [], "key": None}
 
         def on_key(event) -> None:
@@ -347,7 +382,7 @@ class MainWindow:
 
         dialog.bind("<KeyPress>", on_key)
         buttons = ctk.CTkFrame(dialog, fg_color="transparent")
-        buttons.pack(fill="x", padx=18, pady=(0, 18))
+        buttons.pack(fill="x", padx=16, pady=(0, 14))
         ctk.CTkButton(buttons, text="Save", fg_color=ACCENT, hover_color="#1858bb", command=save).pack(side="left")
         ctk.CTkButton(buttons, text="Cancel", fg_color="#eef1f5", text_color=TEXT, hover_color="#dfe5ee", command=dialog.destroy).pack(side="left", padx=(10, 0))
         dialog.focus_force()
@@ -468,3 +503,6 @@ class MainWindow:
             font=ctk.CTkFont(size=12, weight="bold"),
         ).grid(row=0, column=0, sticky="w", padx=14, pady=(14, 12))
         return section
+
+    def _open_license(self) -> None:
+        webbrowser.open((bundle_root() / "LICENSE").resolve().as_uri())
