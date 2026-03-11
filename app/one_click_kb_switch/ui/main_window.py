@@ -178,6 +178,7 @@ class MainWindow:
             width=120,
             command=lambda: webbrowser.open(self.metadata.company_url),
         ).pack(side="left", padx=(10, 0))
+        ctk.CTkLabel(left, text=f"Version {self.metadata.version}", text_color=MUTED, font=ctk.CTkFont(size=SMALL_FONT)).pack(side="left", padx=(14, 0))
 
         ctk.CTkButton(
             footer,
