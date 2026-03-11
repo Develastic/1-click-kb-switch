@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from ctypes import POINTER, Structure, WinDLL, byref, c_int, c_long, c_size_t, c_uint, c_ulong, c_void_p, sizeof, windll
-from ctypes.wintypes import BOOL, DWORD, HINSTANCE, HKL, HWND, LPARAM, LPCWSTR, LRESULT, UINT, WPARAM
+from ctypes import POINTER, Structure, byref, c_int, c_long, c_size_t, c_ssize_t, c_void_p, windll
+from ctypes.wintypes import DWORD, HINSTANCE, HKL, HWND, LPARAM, WPARAM
+
+LRESULT = c_ssize_t
 from threading import Event, Thread
 from typing import Callable
 
@@ -44,10 +46,6 @@ class KBDLLHOOKSTRUCT(Structure):
 
 class MSLLHOOKSTRUCT(Structure):
     _fields_ = [("pt_x", c_long), ("pt_y", c_long), ("mouseData", DWORD), ("flags", DWORD), ("time", DWORD), ("dwExtraInfo", c_size_t)]
-
-
-LowLevelKeyboardProc = c_void_p
-LowLevelMouseProc = c_void_p
 
 
 class WindowsBackend(PlatformBackend):

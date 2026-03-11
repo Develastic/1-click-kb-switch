@@ -64,3 +64,4 @@ The project uses Python 3.12 with CustomTkinter for the main window and pystray 
 
 - 2026-03-11: Bundled switch sound switched to a CC0 Freesound asset by The.sound.Root, converted to WAV at fifty percent volume. Sound is now enabled by default and schema v1 configs are migrated to schema v2 with sound enabled.
 - 2026-03-11: Fixed Windows packaged startup by bundling pylogrouter template files into PyInstaller output after user hit missing `pylogrouter/templates/log_document.html` in installed EXE.
+- 2026-03-11: Fixed Windows packaged startup again: replaced fragile ctypes.wintypes.LRESULT import with c_ssize_t alias and made single-instance lock release resilient so cleanup no longer masks the original startup error.
