@@ -7,19 +7,42 @@ permissions:
   contents: read
 
 jobs:
-  validate:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+  linux-validate:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: '3.12'
+      - name: Install Linux desktop dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-gi libayatana-appindicator3-dev xvfb libgtk-3-dev libgirepository1.0-dev gir1.2-ayatanaappindicator3-0.1
       - name: Sync dependencies
         run: uv sync --extra dev
       - name: Validate desktop runtime
-        run: uv run python -c "import tkinter, pystray; print(tkinter.TkVersion); print(pystray.Icon.__module__)"
+        run: xvfb-run -a uv run python -c "import tkinter, pystray; print(tkinter.TkVersion); print(pystray.Icon.__module__)"
       - name: Run tests
         run: uv run pytest
+
+  windows-build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Install Inno Setup
+        shell: powershell
+        run: choco install innosetup --no-progress -y
+      - name: Build Windows installer
+        shell: powershell
+        run: .\build-windows.ps1
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: 1-click-kb-switch-windows
+          path: |
+            output/windows/1-click-kb-switch-setup.exe
+            dist-windows/1-click-kb-switch/**
+          if-no-files-found: error
