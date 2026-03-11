@@ -8,7 +8,7 @@ PRIMARY_DEFAULT_KEY = "LeftCtrl"
 SECONDARY_DEFAULT_KEY = "LeftShift"
 LEGACY_PRIMARY_DEFAULT_KEY = "RightCtrl"
 LEGACY_SECONDARY_DEFAULT_KEY = "RightShift"
-SINGLE_CLICK_OPTIONS = ["Ignore", "LeftCtrl", "LeftShift", "RightCtrl", "RightShift"]
+SINGLE_CLICK_OPTIONS = ["Ignore", "LeftCtrl", "LeftShift", "RightCtrl", "RightShift", "Custom"]
 
 
 class HotkeyConflictError(ValueError):

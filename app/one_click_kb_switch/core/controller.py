@@ -143,15 +143,17 @@ class RuntimeController:
         return next((item for item in self.config.hotkeys if item.layout_id == layout_id and item.binding_type == "combo"), None)
 
     def set_single_click_binding(self, layout_id: str, trigger_key: str | None) -> None:
-        from one_click_kb_switch.core.hotkeys import upsert_single_click_binding
+        from one_click_kb_switch.core.hotkeys import clear_all_bindings, upsert_single_click_binding
 
+        self.config.hotkeys = clear_all_bindings(self.config.hotkeys, layout_id)
         self.config.hotkeys = upsert_single_click_binding(self.config.hotkeys, layout_id, trigger_key)
         self.config.save()
         self._rebuild_detectors()
 
     def apply_custom_binding(self, layout_id: str, key: str, modifiers: list[str]) -> None:
-        from one_click_kb_switch.core.hotkeys import HotkeyBinding, upsert_custom_binding
+        from one_click_kb_switch.core.hotkeys import HotkeyBinding, clear_all_bindings, upsert_custom_binding
 
+        self.config.hotkeys = clear_all_bindings(self.config.hotkeys, layout_id)
         binding = HotkeyBinding(layout_id=layout_id, binding_type="combo", trigger_key=key, modifiers=modifiers)
         self.config.hotkeys = upsert_custom_binding(self.config.hotkeys, binding)
         self.config.save()

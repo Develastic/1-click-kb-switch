@@ -185,7 +185,7 @@ class MainWindow:
             binding_box = self._make_section(row, "Directed single-click")
             binding_box.grid(row=0, column=1, sticky="nsew", padx=10, pady=14)
             binding_box.grid_columnconfigure(0, weight=1)
-            single_click_var = tk.StringVar(value=self._single_click_option_value(layout.layout_id))
+            single_click_var = tk.StringVar(value=self._hotkey_selector_value(layout.layout_id))
             self._single_click_vars[layout.layout_id] = single_click_var
             binding_controls = ctk.CTkFrame(binding_box, fg_color="transparent")
             binding_controls.grid(row=1, column=0, sticky="ew", pady=(0, 10))
@@ -194,23 +194,16 @@ class MainWindow:
                 binding_controls,
                 values=SINGLE_CLICK_OPTIONS,
                 variable=single_click_var,
-                width=170,
+                width=220,
                 fg_color="#eef1f5",
                 text_color=TEXT,
                 button_color="#d7deea",
                 button_hover_color="#c7cfdd",
                 dropdown_fg_color=CARD,
                 dropdown_text_color=TEXT,
+                command=lambda value, layout_id=layout.layout_id: self._on_hotkey_selector_changed(layout_id, value),
             )
-            single_click_selector.grid(row=0, column=0, sticky="ew", padx=(0, 8))
-            ctk.CTkButton(
-                binding_controls,
-                text="Save",
-                width=92,
-                fg_color=ACCENT,
-                hover_color="#1858bb",
-                command=lambda layout_id=layout.layout_id, value=single_click_var: self._save_single_click(layout_id, value.get()),
-            ).grid(row=0, column=1, sticky="e")
+            single_click_selector.grid(row=0, column=0, sticky="ew")
             binding_label = ctk.CTkLabel(binding_box, text=self._binding_text(layout), text_color=TEXT, justify="left", wraplength=260, anchor="w")
             binding_label.grid(row=2, column=0, sticky="w")
 
@@ -218,32 +211,23 @@ class MainWindow:
             labels_box.grid(row=0, column=2, sticky="nsew", padx=10, pady=14)
             effective_chip = ctk.CTkLabel(labels_box, text=f"Shown in tray: {layout.effective_label}", fg_color=ACCENT_SOFT, text_color=ACCENT, corner_radius=999, padx=10, pady=6)
             ctk.CTkLabel(labels_box, text=f"Auto label: {layout.auto_label}", text_color=MUTED, anchor="w").grid(row=1, column=0, sticky="w")
-            label_var = tk.StringVar(value=layout.label_override)
-            self._label_vars[layout.layout_id] = label_var
             label_controls = ctk.CTkFrame(labels_box, fg_color="transparent")
-            label_controls.grid(row=2, column=0, sticky="ew", pady=(10, 10))
-            label_controls.grid_columnconfigure(0, weight=1)
-            label_entry = ctk.CTkEntry(label_controls, textvariable=label_var, placeholder_text="Optional override")
-            label_entry.grid(row=0, column=0, sticky="ew", padx=(0, 8))
+            label_controls.grid(row=2, column=0, sticky="w", pady=(10, 10))
             ctk.CTkButton(
                 label_controls,
-                text="Save",
-                width=92,
+                text="✎ Edit",
+                width=104,
                 fg_color=ACCENT,
                 hover_color="#1858bb",
-                command=lambda layout_id=layout.layout_id, value=label_var: self._save_label(layout_id, value.get()),
-            ).grid(row=0, column=1, sticky="e")
+                command=lambda layout_id=layout.layout_id: self._edit_label(layout_id),
+            ).grid(row=0, column=0, sticky="w")
             effective_chip.grid(row=3, column=0, sticky="w")
 
-            actions = self._make_section(row, "Custom combo and scope")
+            actions = self._make_section(row, "Directed hotkey details")
             actions.grid(row=0, column=3, sticky="nsew", padx=(10, 16), pady=14)
-            combo_text = self._combo_text(layout.layout_id)
+            combo_text = self._details_text(layout.layout_id)
             combo_summary = ctk.CTkLabel(actions, text=combo_text, text_color=TEXT, justify="left", wraplength=260, anchor="w")
             combo_summary.grid(row=1, column=0, sticky="w")
-            combo_buttons = ctk.CTkFrame(actions, fg_color="transparent")
-            combo_buttons.grid(row=2, column=0, sticky="ew", pady=(10, 8))
-            ctk.CTkButton(combo_buttons, text="Capture combo", width=128, fg_color="#1f2937", hover_color="#111827", command=lambda layout_id=layout.layout_id: self._capture_custom(layout_id)).grid(row=0, column=0, padx=(0, 8))
-            ctk.CTkButton(combo_buttons, text="Clear combo", width=116, fg_color="#eef1f5", text_color=TEXT, hover_color="#dfe5ee", command=lambda layout_id=layout.layout_id: self._clear_custom(layout_id)).grid(row=0, column=1)
             ctk.CTkButton(
                 actions,
                 text="Ignore layout",
@@ -252,7 +236,7 @@ class MainWindow:
                 text_color=TEXT,
                 hover_color="#dfe5ee",
                 command=lambda layout_id=layout.layout_id: self._ignore_layout(layout_id),
-            ).grid(row=3, column=0, sticky="w")
+            ).grid(row=2, column=0, sticky="w", pady=(10, 0))
 
             self._layout_rows[layout.layout_id] = {
                 "binding": binding_label,
@@ -265,41 +249,66 @@ class MainWindow:
         combo = self.controller.combo_binding_for_layout(layout.layout_id)
         if not single and not combo:
             return "Ignored in directed switching."
-        parts = []
         if single:
-            parts.append(f"Single click on {single.trigger_key}")
-        else:
-            parts.append("Single click is disabled")
-        if combo:
-            modifier_text = " + ".join(combo.modifiers)
-            parts.append(f"Custom combo: {modifier_text} + {combo.trigger_key}" if modifier_text else f"Custom key: {combo.trigger_key}")
-        else:
-            parts.append("No custom combo")
-        return "\n".join(parts)
-
-    def _combo_text(self, layout_id: str) -> str:
-        combo = self.controller.combo_binding_for_layout(layout_id)
-        if not combo:
-            return "No custom combo assigned."
+            return f"Single click on {single.trigger_key}"
         modifier_text = " + ".join(combo.modifiers)
-        return f"Current combo: {modifier_text} + {combo.trigger_key}" if modifier_text else f"Current custom key: {combo.trigger_key}"
+        return f"Custom combo: {modifier_text} + {combo.trigger_key}" if modifier_text else f"Custom key: {combo.trigger_key}"
 
-    def _single_click_option_value(self, layout_id: str) -> str:
+    def _details_text(self, layout_id: str) -> str:
+        single = self.controller.single_click_binding_for_layout(layout_id)
+        combo = self.controller.combo_binding_for_layout(layout_id)
+        if single:
+            return "A default directed modifier is assigned. Pick Custom in the selector if you need a different key or combination."
+        if not combo:
+            return "No directed hotkey assigned."
+        modifier_text = " + ".join(combo.modifiers)
+        return f"Current custom hotkey: {modifier_text} + {combo.trigger_key}" if modifier_text else f"Current custom hotkey: {combo.trigger_key}"
+
+    def _hotkey_selector_value(self, layout_id: str) -> str:
         binding = self.controller.single_click_binding_for_layout(layout_id)
-        return binding.trigger_key if binding else "Ignore"
+        if binding:
+            return binding.trigger_key
+        if self.controller.combo_binding_for_layout(layout_id):
+            return "Custom"
+        return "Ignore"
 
-    def _save_label(self, layout_id: str, value: str) -> None:
-        self.controller.update_label_override(layout_id, value)
-        self._refresh_layout_row(layout_id)
-        self._refresh_runtime_summary()
-        self.tray.update_label(self.controller.state.tray_label)
+    def _edit_label(self, layout_id: str) -> None:
+        layout = next(item for item in self.controller.layouts if item.layout_id == layout_id)
+        dialog = ctk.CTkToplevel(self.root)
+        dialog.title("Edit tray label")
+        dialog.geometry("360x180")
+        dialog.resizable(False, False)
+        dialog.configure(fg_color=SURFACE)
+        ctk.CTkLabel(dialog, text="Edit tray label", text_color=TEXT, font=ctk.CTkFont(size=20, weight="bold")).pack(anchor="w", padx=18, pady=(18, 8))
+        ctk.CTkLabel(dialog, text=f"Auto label for {layout.display_name}: {layout.auto_label}", text_color=MUTED, justify="left").pack(anchor="w", padx=18, pady=(0, 12))
+        value = tk.StringVar(value=layout.label_override)
+        entry = ctk.CTkEntry(dialog, textvariable=value, placeholder_text="Leave empty to use auto label")
+        entry.pack(fill="x", padx=18, pady=(0, 16))
 
-    def _save_single_click(self, layout_id: str, value: str) -> None:
+        def save() -> None:
+            self.controller.update_label_override(layout_id, value.get())
+            self._refresh_layout_row(layout_id)
+            self._refresh_runtime_summary()
+            self.tray.update_label(self.controller.state.tray_label)
+            dialog.destroy()
+
+        buttons = ctk.CTkFrame(dialog, fg_color="transparent")
+        buttons.pack(fill="x", padx=18)
+        ctk.CTkButton(buttons, text="Save", fg_color=ACCENT, hover_color="#1858bb", command=save).pack(side="left")
+        ctk.CTkButton(buttons, text="Cancel", fg_color="#eef1f5", text_color=TEXT, hover_color="#dfe5ee", command=dialog.destroy).pack(side="left", padx=(10, 0))
+        dialog.focus_force()
+        dialog.grab_set()
+        entry.focus_set()
+
+    def _on_hotkey_selector_changed(self, layout_id: str, value: str) -> None:
+        if value == "Custom":
+            self._capture_custom(layout_id)
+            return
         try:
             self.controller.set_single_click_binding(layout_id, None if value == "Ignore" else value)
         except HotkeyConflictError as exc:
             messagebox.showerror("Save directed hotkey", str(exc))
-            self._single_click_vars[layout_id].set(self._single_click_option_value(layout_id))
+            self._single_click_vars[layout_id].set(self._hotkey_selector_value(layout_id))
             return
         self._refresh_layout_row(layout_id)
         self._refresh_runtime_summary()
@@ -344,6 +353,7 @@ class MainWindow:
                 messagebox.showerror("Capture custom hotkey", str(exc))
                 return
             self._refresh_layout_row(layout_id)
+            self._refresh_runtime_summary()
             dialog.destroy()
 
         dialog.bind("<KeyPress>", on_key)
@@ -357,14 +367,15 @@ class MainWindow:
     def _clear_custom(self, layout_id: str) -> None:
         self.controller.clear_custom_binding(layout_id)
         self._refresh_layout_row(layout_id)
+        self._refresh_runtime_summary()
 
     def _refresh_layout_row(self, layout_id: str) -> None:
         layout = next(item for item in self.controller.layouts if item.layout_id == layout_id)
         widgets = self._layout_rows[layout_id]
         widgets["binding"].configure(text=self._binding_text(layout))
         widgets["effective"].configure(text=f"Shown in tray: {layout.effective_label}")
-        widgets["combo"].configure(text=self._combo_text(layout_id))
-        self._single_click_vars[layout_id].set(self._single_click_option_value(layout_id))
+        widgets["combo"].configure(text=self._details_text(layout_id))
+        self._single_click_vars[layout_id].set(self._hotkey_selector_value(layout_id))
 
     def _toggle_sound(self) -> None:
         self.controller.set_play_switch_sound(self.sound_var.get())
