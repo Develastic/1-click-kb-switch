@@ -10,10 +10,9 @@ __pycache__/
 build/
 dist/
 out/
-*.wixobj
-*.wixpdb
-*.msi
+output/
 *.AppImage
+*.egg-info/
 
 # Runtime
 *.log

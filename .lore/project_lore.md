@@ -1,8 +1,8 @@
 # Project Description
-1-Click-KB-Switch is a cross-platform desktop keyboard layout switcher for people who use multiple layouts and dislike cyclic switching. The application provides directed switching: one key always maps to one target layout, with single-click modifier bindings such as RightCtrl for English and RightShift for the first non-English layout.
+1-Click-KB-Switch is a cross-platform desktop keyboard layout switcher for people who use multiple layouts and dislike cyclic switching. The application provides directed switching: one key always maps to one target layout, with single-click modifier bindings such as LeftCtrl for English and LeftShift for the first non-English layout during current migration testing.
 
 # Project Archirecture
-The project uses Python 3.12 with CustomTkinter for the main window and pystray for the tray icon. Domain logic lives in typed dataclass-based core services for config, layouts, hotkeys, and runtime state. Platform-specific behavior is isolated behind a PlatformBackend contract with separate Windows, Linux X11, and experimental Linux Wayland implementations. Windows uses WinAPI integration through ctypes for layout switching and low-level hook processing. Linux X11 uses X11/XKB tooling and python-xlib for event listening. Packaging uses PyInstaller one-dir bundles, WiX-based MSI packaging for Windows, and AppImage packaging for Linux.
+The project uses Python 3.12 with CustomTkinter for the main window and pystray for the tray icon. Domain logic lives in typed dataclass-based core services for config, layouts, hotkeys, and runtime state. Platform-specific behavior is isolated behind a PlatformBackend contract with separate Windows, Linux X11, and experimental Linux Wayland implementations. Windows uses WinAPI integration through ctypes for layout switching and low-level hook processing. Linux X11 uses X11/XKB tooling and python-xlib for event listening. Packaging uses PyInstaller one-dir bundles, Inno Setup EXE packaging for Windows, and AppImage packaging for Linux. GitHub workflows are manual validation only; release installers are built locally.
 
 # Project Units
 - pyproject.toml — project metadata, dependencies, pytest config, console entrypoint.
@@ -14,8 +14,11 @@ The project uses Python 3.12 with CustomTkinter for the main window and pystray 
   - assets/fonts/dejavusans.ttf — bundled real font for tray label rendering.
   - one_click_kb_switch/
     - app.py — bootstrap entry for RuntimeController and UI.
+    - app_paths.py — resolves OS-recommended config/data/log/runtime directories.
     - config.py — reads config.toml metadata.
+    - logging_utils.py — pylogrouter-backed console and HTML session logging.
     - paths.py — resolves repo/bundle asset paths.
+    - single_instance.py — per-user instance lock guard.
     - core/models.py — typed dataclasses.
     - core/config.py — AppConfig load/save/defaults/validation.
     - core/layouts.py — english detection, auto labels, default pair selection.
@@ -28,19 +31,20 @@ The project uses Python 3.12 with CustomTkinter for the main window and pystray 
     - platform/linux_wayland/backend.py — experimental backend with explicit warnings.
     - ui/main_window.py — CustomTkinter main window and tray lifecycle.
     - ui/tray.py — tray menu and font-based icon rendering.
-- packaging/windows/installer.wxs — MSI definition with launch-on-exit checkbox.
+- packaging/windows/installer.iss — Inno Setup definition with launch-on-exit checkbox enabled by default.
 - packaging/windows/one_click_kb_switch.spec — Windows PyInstaller spec.
 - packaging/linux/appimage/one_click_kb_switch.spec — Linux PyInstaller spec.
-- docs/windows-release.md — Windows release instructions.
+- bottles.md — Bottles-based local Windows build environment instructions.
+- docs/windows-release.md — Windows release instructions for Bottles or a real Windows host.
 - docs/windows-manual-qa.md — Windows manual QA checklist.
 - tests/ — unit tests for config, layouts, and hotkeys.
-- .github/workflows/ci.yml — PR validation and manual/tag packaging workflows.
+- .github/workflows/ci.yml — manual validation workflow only.
 
 # Notes
 - 2026-03-08: Archived the Rust implementation on branch `codex/archive-rust-native-first` before migrating `main` to Python.
 - 2026-03-08: Canonical public product name is `1-Click-KB-Switch`; filesystem names stay lowercase.
 - 2026-03-08: Tray icon rendering must use a real font to avoid mirrored glyph defects.
-- 2026-03-08: MSI installer must offer launching the app after install, opt-out by checkbox.
+- 2026-03-08: Windows installer must offer launching the app after install, opt-out by checkbox.
 - 2026-03-08: Wayland is experimental only and must show explicit warnings instead of pretending to support unsupported global hook behavior.
 
 - 2026-03-08: Fixed Python startup on non-Windows hosts by making Windows backend import lazy in platform factory.
@@ -49,3 +53,6 @@ The project uses Python 3.12 with CustomTkinter for the main window and pystray 
 - 2026-03-10: Default directed hotkeys changed from right-side modifiers to LeftCtrl and LeftShift to avoid conflicts with existing switchers during migration testing. Legacy autogenerated defaults are migrated on bootstrap.
 - 2026-03-10: On Linux X11 the tray now forces pystray GTK backend instead of AppIndicator so the app follows the native XFCE tray path and does not rely on DBus status notifier integration.
 - 2026-03-10: Added console debug mode (`--debug`) that dumps backend choice, XKB query, localectl status, xset state, detected switching system, installed layouts, and current hotkeys.
+- 2026-03-11: Single-instance lock is now acquired before HTML log initialization so a second launch exits cleanly instead of crashing inside pylogrouter log ownership checks.
+- 2026-03-11: Windows packaging switched from WiX/MSI to Inno Setup EXE named `1-click-kb-switch-setup.exe`; GitHub packaging was removed in favor of local Bottles/Windows builds.
+- 2026-03-11: Verified local Bottles build flow end-to-end; `./build-windows.sh` now stages the project directly into bottle `drive_c`, runs Windows pytest + PyInstaller + Inno Setup, and produces `output/windows/1-click-kb-switch-setup.exe`.

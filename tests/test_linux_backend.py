@@ -1,4 +1,11 @@
-from one_click_kb_switch.platform.linux_x11.backend import LinuxX11Backend
+import sys
+
+import pytest
+
+if sys.platform == "win32":
+    pytestmark = pytest.mark.skip(reason="Linux X11 backend tests are not applicable on Windows")
+else:
+    from one_click_kb_switch.platform.linux_x11.backend import LinuxX11Backend
 
 
 def test_parse_setxkbmap_query_preserves_variants_and_options():

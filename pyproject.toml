@@ -17,6 +17,7 @@ dependencies = [
   "pystray",
   "python-xlib; sys_platform == 'linux'",
   "PyGObject; sys_platform == 'linux'",
+  "pylogrouter",
 ]
 
 [project.optional-dependencies]

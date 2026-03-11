@@ -1,17 +1,13 @@
-name: ci
+name: manual-validate
 
 on:
-  pull_request:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  test:
+  validate:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
@@ -23,78 +19,7 @@ jobs:
           python-version: '3.12'
       - name: Sync dependencies
         run: uv sync --extra dev
-      - name: Validate tag version
-        if: startsWith(github.ref, 'refs/tags/v')
-        shell: bash
-        run: |
-          VERSION=$(python - <<'PYV'
-import tomllib
-from pathlib import Path
-print(tomllib.loads(Path('pyproject.toml').read_text(encoding='utf-8'))['project']['version'])
-PYV
-)
-          TAG=${GITHUB_REF_NAME#v}
-          test "$VERSION" = "$TAG"
       - name: Validate desktop runtime
         run: uv run python -c "import tkinter, pystray; print(tkinter.TkVersion); print(pystray.Icon.__module__)"
       - name: Run tests
         run: uv run pytest
-
-  package-windows:
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
-        with:
-          python-version: '3.12'
-      - name: Sync dependencies
-        run: uv sync --extra dev
-      - name: Install WiX Toolset
-        run: choco install wixtoolset --no-progress -y
-      - name: Build Windows package
-        shell: pwsh
-        run: ./build-windows.ps1
-      - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-release-bundle
-          path: dist/release-assets
-      - name: Publish release assets
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/release-assets/*
-
-  package-linux:
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
-        with:
-          python-version: '3.12'
-      - name: Install Linux native dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-tk libx11-dev libxtst-dev libxkbfile-dev libgirepository1.0-dev libcairo2-dev gir1.2-gtk-3.0
-      - name: Sync dependencies
-        run: uv sync --extra dev
-      - name: Download appimagetool
-        run: |
-          curl -L -o appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
-          chmod +x appimagetool
-      - name: Build AppImage
-        env:
-          APPIMAGETOOL: ${{ github.workspace }}/appimagetool
-        run: ./build-linux.sh
-      - name: Upload Linux artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-release-bundle
-          path: dist/*.AppImage
-      - name: Publish release assets
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*.AppImage

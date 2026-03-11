@@ -25,5 +25,5 @@ a = Analysis(
     cipher=block_cipher,
 )
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
-exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='1-Click-KB-Switch', console=False)
-coll = COLLECT(exe, a.binaries, a.zipfiles, a.datas, name='1-Click-KB-Switch')
+exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='1-click-kb-switch', console=False)
+coll = COLLECT(exe, a.binaries, a.zipfiles, a.datas, name='1-click-kb-switch')

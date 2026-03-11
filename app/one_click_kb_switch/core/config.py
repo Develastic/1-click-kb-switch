@@ -4,8 +4,7 @@ from dataclasses import asdict, dataclass, field
 import json
 from pathlib import Path
 
-from platformdirs import user_config_dir
-
+from one_click_kb_switch.app_paths import AppPaths
 from one_click_kb_switch.config import load_metadata
 from one_click_kb_switch.paths import asset_path
 from one_click_kb_switch.core.hotkeys import validate_unique
@@ -27,9 +26,7 @@ class AppConfig:
 
     @classmethod
     def user_config_path(cls) -> Path:
-        metadata = load_metadata()
-        root = Path(user_config_dir(appname=metadata.canonical_name, appauthor=metadata.company))
-        return root / "config.json"
+        return AppPaths.detect().config_file
 
     @classmethod
     def load(cls, path: Path | None = None) -> "AppConfig":
