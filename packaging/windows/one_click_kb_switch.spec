@@ -1,14 +1,15 @@
 from pathlib import Path
-from PyInstaller.utils.hooks import collect_submodules
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 root = Path.cwd()
+pylogrouter_datas = collect_data_files('pylogrouter')
 block_cipher = None
 
 a = Analysis(
     [str(root / 'app' / 'main.py')],
     pathex=[str(root / 'app')],
     binaries=[],
-    datas=[
+    datas=pylogrouter_datas + [
         (str(root / 'app' / 'assets' / 'config.json.defaults'), 'assets'),
         (str(root / 'app' / 'assets' / 'fonts' / 'dejavusans.ttf'), 'assets/fonts'),
         (str(root / 'app' / 'assets' / 'sounds' / 'switch-click.wav'), 'assets/sounds'),
