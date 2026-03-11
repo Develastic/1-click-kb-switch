@@ -167,7 +167,7 @@ class MainWindow:
             layout_box = self._make_section(row, "Layout")
             layout_box.grid(row=0, column=0, sticky="nsew", padx=(16, 10), pady=14)
             title_row = ctk.CTkFrame(layout_box, fg_color="transparent")
-            title_row.grid(row=1, column=0, sticky="ew", padx=14)
+            title_row.grid(row=1, column=0, sticky="ew", padx=14, pady=(0, 0))
             title_row.grid_columnconfigure(0, weight=1)
             ctk.CTkLabel(title_row, text=layout.display_name, text_color=TEXT, font=ctk.CTkFont(size=17, weight="bold"), anchor="w").grid(row=0, column=0, sticky="w")
             ctk.CTkButton(
@@ -178,7 +178,7 @@ class MainWindow:
                 hover_color="#1858bb",
                 command=lambda layout_id=layout.layout_id: self._edit_label(layout_id),
             ).grid(row=0, column=1, sticky="e")
-            ctk.CTkLabel(layout_box, text=f"ID: {layout.layout_id}", text_color=MUTED, font=ctk.CTkFont(size=12), anchor="w").grid(row=2, column=0, sticky="w", padx=14, pady=(6, 0))
+            ctk.CTkLabel(layout_box, text=f"ID: {layout.layout_id}", text_color=MUTED, font=ctk.CTkFont(size=12), anchor="w").grid(row=2, column=0, sticky="w", padx=14, pady=(12, 0))
             role_text = "English layout" if layout.is_english else "Non-English layout"
             role_color = SUCCESS_BG if layout.is_english else ACCENT_SOFT
             role_text_color = SUCCESS_TEXT if layout.is_english else ACCENT
@@ -190,9 +190,7 @@ class MainWindow:
                 corner_radius=999,
                 padx=10,
                 pady=5,
-            ).grid(row=0, column=0, sticky="w", padx=14, pady=(0, 10))
-            effective_chip = ctk.CTkLabel(layout_box, text=layout.effective_label, fg_color=ACCENT_SOFT, text_color=ACCENT, corner_radius=999, padx=10, pady=6)
-            effective_chip.grid(row=3, column=0, sticky="w", padx=14, pady=(12, 14))
+            ).grid(row=0, column=0, sticky="w", padx=14, pady=(0, 12))
 
             binding_box = self._make_section(row, "Directed single-click")
             binding_box.grid(row=0, column=1, sticky="nsew", padx=10, pady=14)
@@ -215,7 +213,7 @@ class MainWindow:
                 dropdown_text_color=TEXT,
                 command=lambda value, layout_id=layout.layout_id: self._on_hotkey_selector_changed(layout_id, value),
             )
-            single_click_selector.grid(row=0, column=0, sticky="ew")
+            single_click_selector.grid(row=1, column=0, sticky="ew", padx=14, pady=(0, 0))
             binding_label = ctk.CTkLabel(binding_box, text=self._binding_text(layout), text_color=TEXT, justify="left", wraplength=260, anchor="w")
             binding_label.grid(row=2, column=0, sticky="w", padx=14, pady=(12, 14))
 
@@ -223,11 +221,10 @@ class MainWindow:
             actions.grid(row=0, column=2, sticky="nsew", padx=(10, 16), pady=14)
             combo_text = self._details_text(layout.layout_id)
             combo_summary = ctk.CTkLabel(actions, text=combo_text, text_color=TEXT, justify="left", wraplength=260, anchor="w")
-            combo_summary.grid(row=1, column=0, sticky="w", padx=14)
+            combo_summary.grid(row=1, column=0, sticky="w", padx=14, pady=(0, 14))
 
             self._layout_rows[layout.layout_id] = {
                 "binding": binding_label,
-                "effective": effective_chip,
                 "combo": combo_summary,
             }
 
@@ -360,7 +357,6 @@ class MainWindow:
         layout = next(item for item in self.controller.layouts if item.layout_id == layout_id)
         widgets = self._layout_rows[layout_id]
         widgets["binding"].configure(text=self._binding_text(layout))
-        widgets["effective"].configure(text=layout.effective_label)
         widgets["combo"].configure(text=self._details_text(layout_id))
         self._single_click_vars[layout_id].set(self._hotkey_selector_value(layout_id))
 
@@ -465,5 +461,5 @@ class MainWindow:
             text=title,
             text_color=MUTED,
             font=ctk.CTkFont(size=12, weight="bold"),
-        ).grid(row=0, column=0, sticky="w", padx=14, pady=(12, 10))
+        ).grid(row=0, column=0, sticky="w", padx=14, pady=(14, 12))
         return section
