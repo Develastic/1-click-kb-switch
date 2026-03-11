@@ -8,6 +8,7 @@ PRIMARY_DEFAULT_KEY = "LeftCtrl"
 SECONDARY_DEFAULT_KEY = "LeftShift"
 LEGACY_PRIMARY_DEFAULT_KEY = "RightCtrl"
 LEGACY_SECONDARY_DEFAULT_KEY = "RightShift"
+SINGLE_CLICK_OPTIONS = ["Ignore", "LeftCtrl", "LeftShift", "RightCtrl", "RightShift"]
 
 
 class HotkeyConflictError(ValueError):
@@ -15,14 +16,33 @@ class HotkeyConflictError(ValueError):
 
 
 def normalize_modifier_names(modifiers: list[str]) -> list[str]:
-    return sorted({item.strip().title() for item in modifiers if item.strip()})
+    aliases = {
+        "leftctrl": "LeftCtrl",
+        "rightctrl": "RightCtrl",
+        "leftshift": "LeftShift",
+        "rightshift": "RightShift",
+        "leftalt": "LeftAlt",
+        "rightalt": "RightAlt",
+        "leftsuper": "LeftSuper",
+        "rightsuper": "RightSuper",
+    }
+    normalized = set()
+    for item in modifiers:
+        token = item.strip()
+        if not token:
+            continue
+        normalized.add(aliases.get(token.replace("_", "").replace(" ", "").lower(), token))
+    return sorted(normalized)
 
 
 def canonical_binding(binding: HotkeyBinding) -> str:
     if binding.binding_type == "single_click":
-        return f"single:{binding.trigger_key.title()}"
+        return f"single:{normalize_modifier_names([binding.trigger_key])[0] if binding.trigger_key else ''}"
     modifier_text = "+".join(normalize_modifier_names(binding.modifiers))
-    return f"combo:{modifier_text}+{binding.trigger_key.title()}"
+    trigger_key = normalize_modifier_names([binding.trigger_key])[0] if binding.trigger_key in {
+        "LeftCtrl", "RightCtrl", "LeftShift", "RightShift", "LeftAlt", "RightAlt", "LeftSuper", "RightSuper"
+    } else binding.trigger_key.strip()
+    return f"combo:{modifier_text}+{trigger_key}"
 
 
 def validate_binding(binding: HotkeyBinding) -> None:
@@ -78,8 +98,20 @@ def upsert_custom_binding(bindings: list[HotkeyBinding], new_binding: HotkeyBind
     return filtered
 
 
+def upsert_single_click_binding(bindings: list[HotkeyBinding], layout_id: str, trigger_key: str | None) -> list[HotkeyBinding]:
+    filtered = [item for item in bindings if not (item.layout_id == layout_id and item.binding_type == "single_click")]
+    if trigger_key:
+        filtered.append(HotkeyBinding(layout_id=layout_id, binding_type="single_click", trigger_key=trigger_key))
+    validate_unique(filtered)
+    return filtered
+
+
 def clear_custom_binding(bindings: list[HotkeyBinding], layout_id: str) -> list[HotkeyBinding]:
     return [item for item in bindings if not (item.layout_id == layout_id and item.binding_type == "combo")]
+
+
+def clear_all_bindings(bindings: list[HotkeyBinding], layout_id: str) -> list[HotkeyBinding]:
+    return [item for item in bindings if item.layout_id != layout_id]
 
 
 @dataclass(slots=True)
