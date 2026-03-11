@@ -160,15 +160,14 @@ class MainWindow:
         for index, layout in enumerate(self.controller.layouts, start=1):
             row = ctk.CTkFrame(self.layouts_frame, fg_color="#fbfcfe", border_width=1, border_color=BORDER, corner_radius=14)
             row.grid(row=index, column=0, sticky="ew", padx=2, pady=6)
-            row.grid_columnconfigure(0, weight=2)
+            row.grid_columnconfigure(0, weight=3)
             row.grid_columnconfigure(1, weight=3)
-            row.grid_columnconfigure(2, weight=3)
-            row.grid_columnconfigure(3, weight=3)
+            row.grid_columnconfigure(2, weight=4)
 
             layout_box = self._make_section(row, "Layout")
             layout_box.grid(row=0, column=0, sticky="nsew", padx=(16, 10), pady=14)
-            ctk.CTkLabel(layout_box, text=layout.display_name, text_color=TEXT, font=ctk.CTkFont(size=17, weight="bold"), anchor="w").grid(row=1, column=0, sticky="w")
-            ctk.CTkLabel(layout_box, text=f"ID: {layout.layout_id}", text_color=MUTED, font=ctk.CTkFont(size=12), anchor="w").grid(row=2, column=0, sticky="w", pady=(4, 0))
+            ctk.CTkLabel(layout_box, text=layout.display_name, text_color=TEXT, font=ctk.CTkFont(size=17, weight="bold"), anchor="w").grid(row=1, column=0, sticky="w", padx=14)
+            ctk.CTkLabel(layout_box, text=f"ID: {layout.layout_id}", text_color=MUTED, font=ctk.CTkFont(size=12), anchor="w").grid(row=2, column=0, sticky="w", padx=14, pady=(6, 0))
             role_text = "English layout" if layout.is_english else "Non-English layout"
             role_color = SUCCESS_BG if layout.is_english else ACCENT_SOFT
             role_text_color = SUCCESS_TEXT if layout.is_english else ACCENT
@@ -180,7 +179,19 @@ class MainWindow:
                 corner_radius=999,
                 padx=10,
                 pady=5,
-            ).grid(row=0, column=0, sticky="w", pady=(0, 10))
+            ).grid(row=0, column=0, sticky="w", padx=14, pady=(0, 10))
+            label_row = ctk.CTkFrame(layout_box, fg_color="transparent")
+            label_row.grid(row=3, column=0, sticky="w", padx=14, pady=(12, 14))
+            effective_chip = ctk.CTkLabel(label_row, text=f"{layout.effective_label}", fg_color=ACCENT_SOFT, text_color=ACCENT, corner_radius=999, padx=10, pady=6)
+            effective_chip.grid(row=0, column=0, sticky="w")
+            ctk.CTkButton(
+                label_row,
+                text="✎",
+                width=36,
+                fg_color=ACCENT,
+                hover_color="#1858bb",
+                command=lambda layout_id=layout.layout_id: self._edit_label(layout_id),
+            ).grid(row=0, column=1, sticky="w", padx=(8, 0))
 
             binding_box = self._make_section(row, "Directed single-click")
             binding_box.grid(row=0, column=1, sticky="nsew", padx=10, pady=14)
@@ -188,7 +199,7 @@ class MainWindow:
             single_click_var = tk.StringVar(value=self._hotkey_selector_value(layout.layout_id))
             self._single_click_vars[layout.layout_id] = single_click_var
             binding_controls = ctk.CTkFrame(binding_box, fg_color="transparent")
-            binding_controls.grid(row=1, column=0, sticky="ew", pady=(0, 10))
+            binding_controls.grid(row=1, column=0, sticky="ew", padx=14, pady=(0, 10))
             binding_controls.grid_columnconfigure(0, weight=1)
             single_click_selector = ctk.CTkOptionMenu(
                 binding_controls,
@@ -205,29 +216,13 @@ class MainWindow:
             )
             single_click_selector.grid(row=0, column=0, sticky="ew")
             binding_label = ctk.CTkLabel(binding_box, text=self._binding_text(layout), text_color=TEXT, justify="left", wraplength=260, anchor="w")
-            binding_label.grid(row=2, column=0, sticky="w")
-
-            labels_box = self._make_section(row, "Tray label")
-            labels_box.grid(row=0, column=2, sticky="nsew", padx=10, pady=14)
-            effective_chip = ctk.CTkLabel(labels_box, text=f"Shown in tray: {layout.effective_label}", fg_color=ACCENT_SOFT, text_color=ACCENT, corner_radius=999, padx=10, pady=6)
-            ctk.CTkLabel(labels_box, text=f"Auto label: {layout.auto_label}", text_color=MUTED, anchor="w").grid(row=1, column=0, sticky="w")
-            label_controls = ctk.CTkFrame(labels_box, fg_color="transparent")
-            label_controls.grid(row=2, column=0, sticky="w", pady=(10, 10))
-            ctk.CTkButton(
-                label_controls,
-                text="✎ Edit",
-                width=104,
-                fg_color=ACCENT,
-                hover_color="#1858bb",
-                command=lambda layout_id=layout.layout_id: self._edit_label(layout_id),
-            ).grid(row=0, column=0, sticky="w")
-            effective_chip.grid(row=3, column=0, sticky="w")
+            binding_label.grid(row=2, column=0, sticky="w", padx=14, pady=(12, 14))
 
             actions = self._make_section(row, "Directed hotkey details")
-            actions.grid(row=0, column=3, sticky="nsew", padx=(10, 16), pady=14)
+            actions.grid(row=0, column=2, sticky="nsew", padx=(10, 16), pady=14)
             combo_text = self._details_text(layout.layout_id)
             combo_summary = ctk.CTkLabel(actions, text=combo_text, text_color=TEXT, justify="left", wraplength=260, anchor="w")
-            combo_summary.grid(row=1, column=0, sticky="w")
+            combo_summary.grid(row=1, column=0, sticky="w", padx=14)
             ctk.CTkButton(
                 actions,
                 text="Ignore layout",
@@ -236,7 +231,7 @@ class MainWindow:
                 text_color=TEXT,
                 hover_color="#dfe5ee",
                 command=lambda layout_id=layout.layout_id: self._ignore_layout(layout_id),
-            ).grid(row=2, column=0, sticky="w", pady=(10, 0))
+            ).grid(row=2, column=0, sticky="w", padx=14, pady=(10, 14))
 
             self._layout_rows[layout.layout_id] = {
                 "binding": binding_label,
@@ -373,7 +368,7 @@ class MainWindow:
         layout = next(item for item in self.controller.layouts if item.layout_id == layout_id)
         widgets = self._layout_rows[layout_id]
         widgets["binding"].configure(text=self._binding_text(layout))
-        widgets["effective"].configure(text=f"Shown in tray: {layout.effective_label}")
+        widgets["effective"].configure(text=layout.effective_label)
         widgets["combo"].configure(text=self._details_text(layout_id))
         self._single_click_vars[layout_id].set(self._hotkey_selector_value(layout_id))
 
@@ -478,5 +473,5 @@ class MainWindow:
             text=title,
             text_color=MUTED,
             font=ctk.CTkFont(size=12, weight="bold"),
-        ).grid(row=0, column=0, sticky="w", padx=12, pady=(10, 8))
+        ).grid(row=0, column=0, sticky="w", padx=14, pady=(12, 10))
         return section
