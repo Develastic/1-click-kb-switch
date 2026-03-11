@@ -9,7 +9,7 @@ function Invoke-Native {
     param([Parameter(Mandatory = $true)][string[]]$Command)
     & $Command[0] $Command[1..($Command.Length - 1)]
     if ($LASTEXITCODE -ne 0) {
-        throw "Command failed with exit code $LASTEXITCODE: $($Command -join ' ')"
+        throw ("Command failed with exit code {0}: {1}" -f $LASTEXITCODE, ($Command -join " "))
     }
 }
 
