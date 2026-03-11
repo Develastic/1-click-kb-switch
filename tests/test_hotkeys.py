@@ -1,5 +1,6 @@
 import pytest
 
+from one_click_kb_switch.core.controller import RuntimeController
 from one_click_kb_switch.core.hotkeys import (
     HotkeyConflictError,
     InputEvent,
@@ -9,7 +10,7 @@ from one_click_kb_switch.core.hotkeys import (
     upsert_single_click_binding,
     validate_unique,
 )
-from one_click_kb_switch.core.models import HotkeyBinding
+from one_click_kb_switch.core.models import HotkeyBinding, LayoutInfo
 
 
 def test_default_bindings():
@@ -49,3 +50,15 @@ def test_upsert_single_click_binding_replaces_previous_layout_binding():
 
 def test_normalize_modifier_names_preserves_side_specific_names():
     assert normalize_modifier_names(["leftctrl", "RightShift", "LeftCtrl"]) == ["LeftCtrl", "RightShift"]
+
+
+def test_reconcile_hotkeys_upgrades_base_layout_to_single_detected_variant():
+    bindings = [HotkeyBinding(layout_id="ru", binding_type="single_click", trigger_key="LeftShift")]
+    layouts = [
+        LayoutInfo(layout_id="us", display_name="US", is_english=True, auto_label="US"),
+        LayoutInfo(layout_id="ru:rud_rus", display_name="RU (rud_rus)", is_english=False, auto_label="RU"),
+    ]
+
+    reconciled = RuntimeController._reconcile_hotkeys(bindings, layouts)
+
+    assert reconciled[0].layout_id == "ru:rud_rus"

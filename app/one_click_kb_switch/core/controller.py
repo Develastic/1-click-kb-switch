@@ -5,7 +5,7 @@ from pprint import pformat
 from typing import Callable
 
 from one_click_kb_switch.core.config import AppConfig
-from one_click_kb_switch.core.hotkeys import InputEvent, SingleClickDetector, default_bindings, has_legacy_default_bindings
+from one_click_kb_switch.core.hotkeys import HotkeyBinding, InputEvent, SingleClickDetector, default_bindings, has_legacy_default_bindings
 from one_click_kb_switch.core.layouts import build_layout, choose_default_pair
 from one_click_kb_switch.core.models import LayoutInfo, RuntimeState
 from one_click_kb_switch.logging_utils import get_logger
@@ -31,15 +31,29 @@ class RuntimeController:
         backend = create_platform_backend()
         raw_layouts = backend.list_layouts()
         layouts = [build_layout(item.layout_id, item.display_name, config.label_overrides.get(item.layout_id, "")) for item in raw_layouts]
+        original_hotkeys = [
+            HotkeyBinding(
+                layout_id=item.layout_id,
+                binding_type=item.binding_type,
+                trigger_key=item.trigger_key,
+                modifiers=list(item.modifiers),
+            )
+            for item in config.hotkeys
+        ]
+        config.hotkeys = cls._reconcile_hotkeys(config.hotkeys, layouts)
         english, non_english = choose_default_pair(layouts)
         if not config.hotkeys or has_legacy_default_bindings(config.hotkeys, english, non_english):
             config.hotkeys = default_bindings(english, non_english)
+            config.save()
+        elif config.hotkeys != original_hotkeys:
             config.save()
         state = RuntimeState(first_run=first_run)
         state.warnings.extend(backend.get_platform_warnings())
         controller = cls(backend=backend, config=config, layouts=layouts, state=state, debug=debug, _detectors={})
         controller.refresh_active_layout()
         controller._rebuild_detectors()
+        logger.info("Detected layouts: %s", ", ".join(f"{item.display_name} [{item.layout_id}]" for item in layouts) or "none")
+        logger.info("Configured directed hotkeys: %s", ", ".join(f"{binding.trigger_key}->{binding.layout_id}" for binding in config.hotkeys) or "none")
         if debug:
             logger.debug("1-Click-KB-Switch debug mode enabled")
             logger.debug("config path: %s", config_path)
@@ -50,6 +64,35 @@ class RuntimeController:
             logger.debug("active layout: %s", controller.state.active_layout_id)
             logger.debug("platform snapshot:\n%s", pformat(backend.debug_snapshot(), width=120))
         return controller
+
+    @staticmethod
+    def _reconcile_hotkeys(bindings: list[HotkeyBinding], layouts: list[LayoutInfo]) -> list[HotkeyBinding]:
+        available_ids = {item.layout_id for item in layouts}
+        base_to_ids: dict[str, list[str]] = {}
+        for layout in layouts:
+            base_to_ids.setdefault(layout.layout_id.split(":", 1)[0], []).append(layout.layout_id)
+
+        updated: list[HotkeyBinding] = []
+        changed = False
+        for binding in bindings:
+            if binding.layout_id in available_ids:
+                updated.append(binding)
+                continue
+            base = binding.layout_id.split(":", 1)[0]
+            candidates = base_to_ids.get(base, [])
+            if len(candidates) == 1:
+                updated.append(
+                    HotkeyBinding(
+                        layout_id=candidates[0],
+                        binding_type=binding.binding_type,
+                        trigger_key=binding.trigger_key,
+                        modifiers=list(binding.modifiers),
+                    )
+                )
+                changed = True
+            else:
+                updated.append(binding)
+        return updated if changed else bindings
 
     def _rebuild_detectors(self) -> None:
         self._detectors = {
@@ -131,17 +174,25 @@ class RuntimeController:
     def switch_layout(self, layout_id: str) -> bool:
         logger = get_logger()
         try:
+            logger.info("Directed switch requested: trigger target=%s, active=%s", layout_id, self.state.active_layout_id)
             if self.debug:
                 logger.debug("switch_layout request: %s", layout_id)
             self.backend.switch_layout(layout_id)
             self.state.last_switch_error = None
             self.refresh_active_layout()
+            logger.info("Directed switch finished: active=%s", self.state.active_layout_id)
             if self.debug:
                 logger.debug("switch_layout success, active layout now: %s", self.state.active_layout_id)
             return True
         except Exception as exc:  # noqa: BLE001
             self.state.last_switch_error = str(exc)
-            logger.warning("switch_layout failed for %s: %s", layout_id, exc)
+            logger.warning(
+                "Directed switch failed: requested=%s active=%s available=%s error=%s",
+                layout_id,
+                self.state.active_layout_id,
+                [item.layout_id for item in self.layouts],
+                exc,
+            )
             return False
 
     def start_hooks(self, callback: Callable[[str], None]) -> None:
@@ -152,6 +203,7 @@ class RuntimeController:
                 logger.debug("input event: %s %s", event.key, event.kind)
             for detector, layout_id in self._detectors.values():
                 if detector.feed(event):
+                    logger.info("Single-click matched: key=%s target=%s", event.key, layout_id)
                     if self.debug:
                         logger.debug("single-click trigger matched layout: %s", layout_id)
                     callback(layout_id)
