@@ -1,8 +1,8 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "has_completed_first_run": false,
   "start_minimized_after_first_run": true,
-  "play_switch_sound": false,
+  "play_switch_sound": true,
   "label_overrides": {},
   "hotkeys": []
 }

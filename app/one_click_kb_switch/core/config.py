@@ -32,8 +32,10 @@ class AppConfig:
     def load(cls, path: Path | None = None) -> "AppConfig":
         target = path or cls.user_config_path()
         payload = json.loads(target.read_text(encoding="utf-8"))
-        config = cls.from_dict(payload)
+        config, changed = cls._from_payload(payload)
         config.validate()
+        if changed:
+            config.save(target)
         return config
 
     def save(self, path: Path | None = None) -> None:
@@ -43,10 +45,23 @@ class AppConfig:
 
     @classmethod
     def create_from_defaults(cls, path: Path | None = None) -> "AppConfig":
-        config = cls.from_dict(json.loads(cls.defaults_path().read_text(encoding="utf-8")))
+        config, _ = cls._from_payload(json.loads(cls.defaults_path().read_text(encoding="utf-8")))
         config.validate()
         config.save(path)
         return config
+
+    @classmethod
+    def _from_payload(cls, payload: dict) -> tuple["AppConfig", bool]:
+        schema_version = int(payload.get("schema_version", 1))
+        changed = False
+        if schema_version == 1:
+            payload = dict(payload)
+            payload["schema_version"] = 2
+            payload["play_switch_sound"] = True
+            schema_version = 2
+            changed = True
+        config = cls.from_dict(payload)
+        return config, changed
 
     @classmethod
     def from_dict(cls, payload: dict) -> "AppConfig":
@@ -54,7 +69,7 @@ class AppConfig:
             schema_version=int(payload["schema_version"]),
             has_completed_first_run=bool(payload.get("has_completed_first_run", False)),
             start_minimized_after_first_run=bool(payload.get("start_minimized_after_first_run", True)),
-            play_switch_sound=bool(payload.get("play_switch_sound", False)),
+            play_switch_sound=bool(payload.get("play_switch_sound", True)),
             label_overrides={str(key): str(value).upper() for key, value in payload.get("label_overrides", {}).items()},
             hotkeys=[HotkeyBinding(**item) for item in payload.get("hotkeys", [])],
         )

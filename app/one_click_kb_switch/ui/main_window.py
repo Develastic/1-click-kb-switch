@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import sys
 import tkinter as tk
 from tkinter import messagebox
 import webbrowser
@@ -18,6 +17,7 @@ from one_click_kb_switch.core.hotkeys import (
 )
 from one_click_kb_switch.core.models import LayoutInfo
 from one_click_kb_switch.paths import bundle_root
+from one_click_kb_switch.sound import SwitchSoundPlayer
 from one_click_kb_switch.ui.tray import TrayIcon
 
 
@@ -69,6 +69,7 @@ class MainWindow:
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         self.root.after(300, self._poll_active_layout)
         self._build_layout()
+        self.sound_player = SwitchSoundPlayer()
         self.tray = TrayIcon(controller.state.tray_label, self.show_window, self.exit_app)
         self.tray.run()
         self.controller.start_hooks(self._switch_from_hook)
@@ -453,12 +454,7 @@ class MainWindow:
         self.tray.update_label(self.controller.state.tray_label)
 
     def _play_switch_sound(self) -> None:
-        if sys.platform == "win32":
-            import winsound
-
-            winsound.MessageBeep(winsound.MB_OK)
-        else:
-            self.root.bell()
+        self.sound_player.play()
 
     def _on_close(self) -> None:
         self.hide_window()

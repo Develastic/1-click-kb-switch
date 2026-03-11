@@ -1,0 +1,17 @@
+1-Click-KB-Switch bundled switch sound
+
+Source:
+https://freesound.org/people/The.sound.Root/sounds/792319/
+
+Title:
+CLICK 100
+
+Author:
+The.sound.Root
+
+License:
+CC0 1.0
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Processing:
+Converted to WAV and reduced to 50% volume for bundled playback.

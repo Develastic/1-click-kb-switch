@@ -3,5 +3,5 @@ canonical_name = "1-Click-KB-Switch"
 company = "Develastic"
 company_url = "https://develastic.com"
 author = "Mykola Rudenko"
-config_schema_version = 1
+config_schema_version = 2
 windows_upgrade_code = "1D7CE10C-6FF1-4FE2-9B86-A166803E18AB"

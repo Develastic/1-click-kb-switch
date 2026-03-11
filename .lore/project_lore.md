@@ -61,3 +61,5 @@ The project uses Python 3.12 with CustomTkinter for the main window and pystray 
 - 2026-03-11: Refined the main window layout editor into aligned per-layout sections (`Layout`, `Directed single-click`, `Tray label`, `Custom combo and scope`) so hotkey assignment is readable and does not look like an arbitrary pile of buttons.
 - 2026-03-11: Simplified hotkey assignment UX further: the directed hotkey selector now includes `Custom` and opens the capture dialog immediately, while tray labels are edited through a compact `Edit` button instead of a permanent inline entry field.
 - 2026-03-11: Added a compact footer with Develastic copyright, company site link, and MIT license link; also tightened dialog typography and vertical spacing so the main window fits more information without looking bloated.
+
+- 2026-03-11: Bundled switch sound switched to a CC0 Freesound asset by The.sound.Root, converted to WAV at fifty percent volume. Sound is now enabled by default and schema v1 configs are migrated to schema v2 with sound enabled.

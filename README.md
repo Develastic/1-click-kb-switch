@@ -31,6 +31,7 @@ With a cyclic switcher, a hotkey only means “go to the next layout”, so you 
   - `LeftShift` → first detected non-English layout
 - Custom bindings can be assigned per layout
 - Tray labels are rendered with a real font to avoid mirrored glyph issues
+- Successful directed switches play a bundled short low click sound by default
 - Linux X11 tray uses the GTK backend to match the native tray environment without forcing DBus/AppIndicator integration
 - Windows installer is an Inno Setup EXE named `1-click-kb-switch-setup.exe`
 
@@ -78,3 +79,8 @@ The console log prints the selected platform backend, detected switching system,
 ## License and agreement
 - License: MIT
 - End-user agreement: `/home/mykola/src/1-click-kb-switch/EULA.md`
+
+## Bundled sound
+- Asset: [CLICK 100 by The.sound.Root](https://freesound.org/people/The.sound.Root/sounds/792319/)
+- License: CC0 1.0
+- Processing: converted to WAV and reduced to fifty percent volume for comfortable repeated use

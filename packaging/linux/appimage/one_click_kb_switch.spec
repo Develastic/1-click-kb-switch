@@ -9,6 +9,8 @@ a = Analysis(
     datas=[
         (str(root / 'app' / 'assets' / 'config.json.defaults'), 'assets'),
         (str(root / 'app' / 'assets' / 'fonts' / 'dejavusans.ttf'), 'assets/fonts'),
+        (str(root / 'app' / 'assets' / 'sounds' / 'switch-click.wav'), 'assets/sounds'),
+        (str(root / 'app' / 'assets' / 'sounds' / 'credits.txt'), 'assets/sounds'),
         (str(root / 'EULA.md'), '.'),
         (str(root / 'LICENSE'), '.'),
         (str(root / 'config.toml'), '.'),
